@@ -24,10 +24,21 @@ def init_duckdb_s3_connection() -> duckdb.DuckDBPyConnection:
     logger.info("Initializing DuckDB with httpfs and spatial extensions...")
     conn = duckdb.connect(database=":memory:")
     
-    # Load required extensions
-    conn.execute("INSTALL httpfs; LOAD httpfs;")
+    # Load required extensions safely
     try:
-        conn.execute("INSTALL spatial; LOAD spatial;")
+        conn.execute("INSTALL httpfs;")
+    except Exception:
+        pass
+
+    try:
+        conn.execute("LOAD httpfs;")
+    except Exception as e:
+        logger.error(f"Failed to load httpfs: {e}")
+        raise
+
+    try:
+        conn.execute("INSTALL spatial;")
+        conn.execute("LOAD spatial;")
     except Exception as e:
         logger.warning(f"Spatial extension load notice: {e}")
 
