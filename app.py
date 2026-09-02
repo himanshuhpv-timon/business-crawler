@@ -519,21 +519,57 @@ st.markdown("""
             border-radius: 9999px !important;
         }
 
-        /* Mobile Sidebar as smooth off-canvas overlay drawer */
-        [data-testid="stSidebar"] {
-            width: 86vw !important;
-            max-width: 360px !important;
-            min-width: 280px !important;
-            box-shadow: 4px 0 25px rgba(0, 0, 0, 0.2) !important;
+        /* Mobile: When sidebar is collapsed, FORCE 100% OFF SCREEN (Zero peeking) */
+        section[data-testid="stSidebar"][aria-expanded="false"] {
+            display: none !important;
+            visibility: hidden !important;
+            transform: translateX(-100vw) !important;
+            margin-left: -9999px !important;
+            width: 0 !important;
+            min-width: 0 !important;
+            max-width: 0 !important;
+            overflow: hidden !important;
+        }
+
+        /* Mobile: When sidebar is expanded, smoothly overlay as a drawer */
+        section[data-testid="stSidebar"][aria-expanded="true"] {
+            display: block !important;
+            visibility: visible !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            height: 100vh !important;
+            width: 85vw !important;
+            max-width: 350px !important;
+            min-width: 260px !important;
+            transform: none !important;
+            margin-left: 0 !important;
+            z-index: 9999999 !important;
+            box-shadow: 10px 0 40px rgba(0, 0, 0, 0.35) !important;
             background-color: #FFFFFF !important;
-            z-index: 1000000 !important;
+            overflow-y: auto !important;
         }
 
         /* Metric Cards: Clean 2-column grid on phones */
-        [data-testid="column"] {
-            min-width: 47% !important;
-            flex: 1 1 47% !important;
-            margin-bottom: 0.5rem !important;
+        [data-testid="stHorizontalBlock"] {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 0.5rem !important;
+        }
+
+        [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+            min-width: calc(50% - 0.4rem) !important;
+            max-width: calc(50% - 0.4rem) !important;
+            flex: 1 1 calc(50% - 0.4rem) !important;
+            margin-bottom: 0.4rem !important;
+        }
+
+        .metric-card-modern {
+            padding: 0.85rem 0.65rem !important;
+        }
+
+        .metric-number {
+            font-size: 1.35rem !important;
         }
 
         /* Mobile Action Buttons: Full width for easy thumb tapping */
