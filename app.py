@@ -29,63 +29,177 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for high-polish desktop UI
+# Custom CSS for sleek, premium Apple / macOS Human Interface Guidelines aesthetic
 st.markdown("""
 <style>
+    /* 1. Typography: Apple System Fonts & Clean Weights */
+    html, body, [class*="css"], [class*="st-"], div, span, button, input, select, textarea {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    }
+    
+    h1, h2, h3, h4, h5, h6, .main-title {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+        font-weight: 600 !important;
+        color: #1D1D1F !important;
+        letter-spacing: -0.02em !important;
+    }
+    
+    p, label, span, .subtitle {
+        font-weight: 400 !important;
+        color: #424245 !important;
+    }
+
+    /* 2. Window Chrome & Desktop Canvas Feel */
+    #MainMenu { visibility: hidden; }
+    header { visibility: hidden; }
+    footer { visibility: hidden; }
+    
+    .block-container {
+        padding-top: 1.8rem !important;
+        padding-bottom: 2.5rem !important;
+        max-width: 96% !important;
+    }
+
+    [data-testid="stAppViewContainer"] {
+        background-color: #FBFBFD !important;
+    }
+
+    [data-testid="stSidebar"] {
+        background-color: #F5F5F7 !important;
+        border-right: 1px solid #E5E5EA !important;
+    }
+
+    /* 3. Header & Badges */
     .main-title {
-        font-size: 2.3rem;
-        font-weight: 800;
-        color: #0F172A;
-        margin-bottom: 0.2rem;
-        letter-spacing: -0.02em;
+        font-size: 2.2rem !important;
+        margin-bottom: 0.25rem !important;
     }
     .subtitle {
-        font-size: 1.05rem;
-        color: #475569;
-        margin-bottom: 1.5rem;
+        font-size: 1.02rem !important;
+        color: #6E6E73 !important;
+        line-height: 1.5 !important;
+        margin-bottom: 1.4rem !important;
     }
     .badge-container {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.4rem;
-        margin-bottom: 0.8rem;
+        gap: 0.45rem;
+        margin-bottom: 0.85rem;
     }
     .badge {
         display: inline-block;
-        padding: 0.25rem 0.65rem;
-        font-size: 0.8rem;
-        font-weight: 600;
+        padding: 0.28rem 0.72rem;
+        font-size: 0.78rem;
+        font-weight: 500;
         border-radius: 9999px;
-        background-color: #F1F5F9;
-        color: #334155;
-        border: 1px solid #CBD5E1;
+        background-color: #FFFFFF;
+        color: #1D1D1F;
+        border: 1px solid #F5F5F7;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
     }
     .badge-highlight {
-        background-color: #EFF6FF;
-        color: #1D4ED8;
-        border-color: #BFDBFE;
+        background-color: #E8F2FF !important;
+        color: #0071E3 !important;
+        border-color: #CCE3FF !important;
     }
+
+    /* 4. Metric Cards: Soft Floating Geometry */
     .metric-card {
-        background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
-        border: 1px solid #E2E8F0;
-        border-radius: 0.85rem;
-        padding: 1rem 0.75rem;
-        text-align: center;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        background: #FFFFFF !important;
+        border: 1px solid #F5F5F7 !important;
+        border-radius: 14px !important;
+        padding: 1.2rem 0.9rem !important;
+        text-align: center !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    .metric-card:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06) !important;
     }
     .metric-value {
-        font-size: 1.85rem;
-        font-weight: 800;
-        color: #0F172A;
-        line-height: 1.2;
+        font-size: 1.95rem !important;
+        font-weight: 600 !important;
+        color: #1D1D1F !important;
+        line-height: 1.2 !important;
     }
     .metric-label {
-        font-size: 0.78rem;
-        color: #64748B;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        margin-top: 0.35rem;
-        font-weight: 600;
+        font-size: 0.74rem !important;
+        color: #86868B !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.08em !important;
+        margin-top: 0.35rem !important;
+        font-weight: 600 !important;
+    }
+
+    /* 5. Pill Buttons with Smooth Lift */
+    .stButton > button {
+        border-radius: 20px !important;
+        font-weight: 500 !important;
+        font-size: 0.92rem !important;
+        padding: 0.55rem 1.4rem !important;
+        border: none !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    .stButton > button:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 5px 14px rgba(0, 0, 0, 0.08) !important;
+    }
+    .stButton > button:active {
+        transform: translateY(0px) !important;
+    }
+    .stButton > button[kind="primary"] {
+        background: #0071E3 !important;
+        color: #FFFFFF !important;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background: #0077ED !important;
+        box-shadow: 0 6px 16px rgba(0, 113, 227, 0.28) !important;
+    }
+
+    .stDownloadButton > button {
+        border-radius: 20px !important;
+        font-weight: 500 !important;
+        font-size: 0.92rem !important;
+        padding: 0.55rem 1.4rem !important;
+        border: none !important;
+        background: #0071E3 !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    .stDownloadButton > button:hover {
+        background: #0077ED !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 16px rgba(0, 113, 227, 0.28) !important;
+    }
+
+    /* 6. Soft Geometry for Containers, Tables & Widgets */
+    [data-testid="stDataFrame"], [data-testid="stTable"], .stDataFrame {
+        border-radius: 14px !important;
+        overflow: hidden !important;
+        border: 1px solid #F5F5F7 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+        background-color: #FFFFFF !important;
+    }
+
+    div[data-testid="stExpander"], div[data-testid="stStatusWidget"], div[data-testid="stAlert"] {
+        border-radius: 14px !important;
+        border: 1px solid #F5F5F7 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+        background-color: #FFFFFF !important;
+    }
+
+    /* 7. Input Elements & Selectboxes */
+    [data-testid="stSidebar"] [data-baseweb="select"],
+    [data-testid="stSidebar"] [data-baseweb="input"],
+    [data-testid="stSidebar"] .stTextInput input,
+    .stTextInput input,
+    [data-baseweb="select"] > div {
+        border-radius: 12px !important;
+        border: 1px solid #E5E5EA !important;
+        background-color: #FFFFFF !important;
     }
 </style>
 """, unsafe_allow_html=True)
