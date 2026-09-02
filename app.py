@@ -1,8 +1,9 @@
 """
 app.py - High-Performance Global Business Directory Extractor
 Powered by Streamlit, DuckDB, Overture Maps S3, and GeoNamesCache.
-Features global cascading location selectors, multi-category stacking,
-keyword clubbing, offline 0ms geocoding, and unlimited record extraction.
+Features global cascading location selectors, multi-city extraction,
+select-all-cities mode, multi-category stacking, keyword clubbing,
+offline 0ms geocoding, and unlimited record extraction.
 Styled with a high-contrast Neo-Minimalist Black & Electric Yellow aesthetic on Pure White.
 """
 
@@ -35,12 +36,12 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-    /* 1. Global Typography: Apply only to text elements, NEVER override icon fonts */
+    /* 1. Global Typography: Target text elements, NEVER override icon fonts */
     html, body, p, h1, h2, h3, h4, h5, h6, label, input, button, select, textarea {
         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     }
 
-    /* Protect Streamlit icon ligatures from text-font corruption */
+    /* Protect Streamlit icon ligatures from font corruption */
     [data-testid*="Icon"], .material-symbols-rounded, .material-icons, [data-testid="stStatusWidget"] svg, [data-testid="stExpander"] svg {
         font-family: 'Material Symbols Rounded', 'Material Icons' !important;
     }
@@ -55,10 +56,6 @@ st.markdown("""
         font-weight: 800 !important;
         color: #000000 !important;
         letter-spacing: -0.03em !important;
-    }
-
-    p, label, span {
-        color: #374151 !important;
     }
 
     /* 2. Hide Streamlit Headers, Menus & Locked Static Sidebar */
@@ -110,7 +107,7 @@ st.markdown("""
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 1rem;
-        margin-bottom: 1.8rem;
+        margin-bottom: 1.6rem;
     }
 
     .hero-title-group {
@@ -122,27 +119,31 @@ st.markdown("""
         display: flex;
         align-items: center;
         gap: 0.6rem;
-        margin-bottom: 0.6rem;
+        margin-bottom: 0.5rem;
     }
 
     .hero-tag {
         display: inline-flex;
         align-items: center;
         gap: 0.45rem;
-        background: #000000;
+        background: #000000 !important;
+        color: #FFFFFF !important;
         padding: 0.28rem 0.8rem;
         border-radius: 9999px;
         font-size: 0.74rem;
         font-weight: 700;
-        color: #FFFFFF;
         letter-spacing: 0.03em;
+    }
+
+    .hero-tag * {
+        color: #FFFFFF !important;
     }
 
     .hero-tag .dot-yellow {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background-color: #FFE600;
+        background-color: #FFE600 !important;
     }
 
     .hero-tag-outline {
@@ -177,24 +178,11 @@ st.markdown("""
     .hero-subtitle {
         font-size: 1.05rem !important;
         color: #6B7280 !important;
-        margin-top: 0.5rem !important;
+        margin-top: 0.4rem !important;
         font-weight: 500 !important;
     }
 
     /* 4. Target Parameter Bar */
-    .target-banner {
-        background: #FFFFFF;
-        border: 1.5px solid #E5E7EB;
-        border-radius: 20px;
-        padding: 0.9rem 1.3rem;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 0.8rem;
-        margin-bottom: 1.5rem;
-    }
-
     .chip-container {
         display: flex;
         align-items: center;
@@ -207,8 +195,8 @@ st.markdown("""
         align-items: center;
         gap: 0.4rem;
         background: #F9FAFB;
-        border: 1px solid #E5E7EB;
-        padding: 0.4rem 0.9rem;
+        border: 1.5px solid #E5E7EB;
+        padding: 0.4rem 0.95rem;
         border-radius: 9999px;
         font-size: 0.84rem;
         font-weight: 600;
@@ -220,7 +208,7 @@ st.markdown("""
         font-weight: 800;
     }
 
-    /* 5. High-Impact Action Buttons (Electric Yellow & Jet Black) */
+    /* 5. High-Impact Action Buttons: Strictly Force Bright Visible Text */
     .stButton > button {
         border-radius: 9999px !important;
         font-weight: 800 !important;
@@ -233,6 +221,11 @@ st.markdown("""
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
 
+    .stButton > button * {
+        color: #000000 !important;
+        font-weight: 800 !important;
+    }
+
     .stButton > button:hover {
         background-color: #000000 !important;
         color: #FFE600 !important;
@@ -241,8 +234,9 @@ st.markdown("""
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
     }
 
-    .stButton > button:active {
-        transform: translateY(0px) !important;
+    .stButton > button:hover * {
+        color: #FFE600 !important;
+        font-weight: 800 !important;
     }
 
     .stDownloadButton > button {
@@ -257,6 +251,11 @@ st.markdown("""
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
 
+    .stDownloadButton > button * {
+        color: #FFE600 !important;
+        font-weight: 800 !important;
+    }
+
     .stDownloadButton > button:hover {
         background-color: #FFE600 !important;
         color: #000000 !important;
@@ -265,7 +264,12 @@ st.markdown("""
         box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2) !important;
     }
 
-    /* 6. Clean Single-Line Metric Cards (No Wrapping on Numbers) */
+    .stDownloadButton > button:hover * {
+        color: #000000 !important;
+        font-weight: 800 !important;
+    }
+
+    /* 6. Clean Single-Line Metric Cards */
     .metric-card-modern {
         background: #FFFFFF !important;
         border: 1.5px solid #E5E7EB !important;
@@ -297,25 +301,28 @@ st.markdown("""
         width: 32px;
         height: 32px;
         border-radius: 50%;
-        background-color: #000000;
-        color: #FFE600;
+        background-color: #000000 !important;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         font-size: 0.95rem;
     }
 
+    .metric-icon-circle * {
+        color: #FFE600 !important;
+    }
+
     .metric-subbadge {
         font-size: 0.72rem;
         font-weight: 800;
-        color: #000000;
-        background: #FFE600;
+        color: #000000 !important;
+        background: #FFE600 !important;
         padding: 0.15rem 0.55rem;
         border-radius: 9999px;
         letter-spacing: 0.02em;
     }
 
-    /* CRITICAL: Enforce single-line non-wrapping metric numbers */
+    /* Metric Numbers: Strictly 1 line, zero wrapping */
     .metric-number {
         font-size: clamp(1.2rem, 1.6vw, 1.7rem) !important;
         font-weight: 800 !important;
@@ -339,32 +346,41 @@ st.markdown("""
         text-overflow: ellipsis !important;
     }
 
-    /* 7. Clean Result Banner (Replaces Glitchy Collapsible Status Box) */
+    /* 7. Result Banner: Bright White & Yellow Text on Solid Black */
     .result-banner {
-        background: #000000;
-        color: #FFFFFF;
+        background: #000000 !important;
+        color: #FFFFFF !important;
         border-radius: 14px;
-        padding: 0.75rem 1.25rem;
+        padding: 0.85rem 1.4rem;
         display: flex;
         align-items: center;
         gap: 0.85rem;
-        font-size: 0.92rem;
+        font-size: 0.95rem;
         margin-top: 0.5rem;
-        margin-bottom: 1.2rem;
+        margin-bottom: 1.3rem;
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
     }
 
+    .result-banner * {
+        color: #FFFFFF !important;
+    }
+
+    .result-banner strong {
+        color: #FFE600 !important;
+        font-weight: 800 !important;
+    }
+
     .result-banner .banner-badge {
-        background: #FFE600;
-        color: #000000;
-        font-weight: 800;
-        font-size: 0.72rem;
-        padding: 0.2rem 0.65rem;
+        background: #FFE600 !important;
+        color: #000000 !important;
+        font-weight: 800 !important;
+        font-size: 0.74rem;
+        padding: 0.22rem 0.7rem;
         border-radius: 9999px;
         letter-spacing: 0.05em;
     }
 
-    /* 8. Modern Input Styling & Form Controls */
+    /* 8. Controls & Inputs */
     [data-testid="stSidebar"] [data-baseweb="select"],
     [data-testid="stSidebar"] [data-baseweb="input"],
     [data-testid="stSidebar"] .stTextInput input,
@@ -381,13 +397,6 @@ st.markdown("""
     [data-testid="stSidebar"] .stTextInput input:focus {
         border-color: #000000 !important;
         box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.3) !important;
-    }
-
-    /* Radio & Checkbox Styling in Yellow / Black */
-    [data-testid="stCheckbox"] [aria-checked="true"],
-    [data-testid="stRadio"] [aria-checked="true"] {
-        background-color: #000000 !important;
-        border-color: #000000 !important;
     }
 
     /* Dataframe & Tables */
@@ -477,7 +486,7 @@ def cached_query_overture(
     )
 
 
-# ---------------- SIDEBAR: GLOBAL CASCADING & CATEGORY SELECTORS ----------------
+# ---------------- SIDEBAR: GLOBAL CASCADING & MULTI-CITY SELECTORS ----------------
 with st.sidebar:
     st.markdown("### ⚡ Search Parameters")
     st.caption("Direct S3 Parquet streaming powered by DuckDB & Overture Maps.")
@@ -508,50 +517,56 @@ with st.sidebar:
         help="Dynamically populated based on the selected country."
     )
 
-    # City Selector (Cascades dynamically from State)
+    # 2. City Selection: Select All Cities or Multiple Cities
     cities_list = loc_service.get_cities_for_state(
         country_name=selected_country,
         state_name=selected_state,
         state_to_code=state_code_map
     )
 
-    city_mode = st.radio("City Selection Mode", ["Standard City List", "Custom City Input"], horizontal=True)
+    st.markdown("#### 2. City Selection")
+    select_all_cities = st.checkbox(
+        f"⚡ Select All Cities in {selected_state} ({len(cities_list)} cities)",
+        value=False,
+        help=f"Extract businesses across all {len(cities_list)} major cities in {selected_state}."
+    )
 
-    if city_mode == "Standard City List" and cities_list:
-        default_city_idx = 0
-        if "Austin" in cities_list:
-            default_city_idx = cities_list.index("Austin")
-        elif "Toronto" in cities_list:
-            default_city_idx = cities_list.index("Toronto")
-        elif "London" in cities_list:
-            default_city_idx = cities_list.index("London")
-
-        selected_city = st.selectbox(
-            "City",
-            options=cities_list,
-            index=default_city_idx,
-            help="Major cities (pop > 15,000) within the selected region."
-        )
+    if select_all_cities:
+        selected_cities = cities_list
+        st.info(f"ℹ️ All **{len(cities_list)}** cities in **{selected_state}** selected.")
     else:
-        selected_city = st.text_input(
-            "City Name",
-            value=cities_list[0] if cities_list else "Austin",
-            placeholder="e.g., Austin, Bhopal, Munich, Kyoto",
-            help="Type any city or town name."
+        # Default to a prominent city
+        default_city_selection = []
+        if "Austin" in cities_list:
+            default_city_selection = ["Austin"]
+        elif "Bhopal" in cities_list:
+            default_city_selection = ["Bhopal"]
+        elif "Toronto" in cities_list:
+            default_city_selection = ["Toronto"]
+        elif "London" in cities_list:
+            default_city_selection = ["London"]
+        elif cities_list:
+            default_city_selection = [cities_list[0]]
+
+        selected_cities = st.multiselect(
+            "Select Cities (Single or Multiple)",
+            options=cities_list,
+            default=default_city_selection,
+            help="Choose one or more cities to extract simultaneously."
         )
 
     # Spatial Boundary Scope
-    st.markdown("#### 2. Boundary Scope")
+    st.markdown("#### 3. Boundary Scope")
     scope_option = st.radio(
         "Coverage Area",
         options=["Strict City Limits", "Include Metro / Suburbs (+20%)"],
         index=0,
-        help="Strict limits restricts queries to exact municipal bounds. Metro expands bounds to capture suburbs."
+        help="Strict limits restricts queries to municipal bounds. Metro expands bounds to capture suburbs."
     )
     buffer_ratio = 0.20 if "Metro" in scope_option else 0.0
 
-    # 3. Category & Keyword Selector
-    st.markdown("#### 3. Business Industry")
+    # 4. Category & Keyword Selector
+    st.markdown("#### 4. Business Industry")
     select_all_cats = st.checkbox(
         "⚡ Extract All Categories (Full City)",
         value=False,
@@ -583,16 +598,23 @@ with st.sidebar:
 
 
 # ---------------- MAIN DASHBOARD HERO ----------------
-# Build formatted location query string
-formatted_location = loc_service.format_location_query(
-    city=selected_city,
-    state=selected_state if selected_state != "All Regions" else None,
-    country=selected_country
-)
+# Build formatted location label
+if not selected_cities:
+    location_summary = f"{selected_state}, {selected_country}"
+    cat_city_slug = "all_cities"
+elif len(selected_cities) == 1:
+    location_summary = f"{selected_cities[0]}, {selected_state}, {selected_country}"
+    cat_city_slug = slugify(selected_cities[0])
+elif select_all_cities:
+    location_summary = f"All {len(selected_cities)} Cities in {selected_state}, {selected_country}"
+    cat_city_slug = f"all_cities_{slugify(selected_state)}"
+else:
+    location_summary = f"{len(selected_cities)} Cities ({', '.join(selected_cities[:2])}...) in {selected_state}"
+    cat_city_slug = f"{len(selected_cities)}_cities_{slugify(selected_state)}"
 
 # Determine Category Display Text
 if select_all_cats:
-    category_summary = "All Categories (Full City)"
+    category_summary = "All Categories (Full Directory)"
     cat_slug_for_file = "all_categories"
 elif keyword_input.strip() and selected_categories:
     category_summary = f"Keyword '{keyword_input.strip()}' + {len(selected_categories)} categories"
@@ -607,12 +629,12 @@ else:
     category_summary = "All Categories"
     cat_slug_for_file = "all"
 
-# Hero Header with Neo-Minimalist High-Fashion Layout
+# Hero Header with Neo-Minimalist Black & Electric Yellow Layout
 st.markdown(f"""
 <div class="hero-header">
     <div class="hero-title-group">
         <div class="hero-badge-row">
-            <span class="hero-tag"><span class="dot-yellow"></span> Cloud S3 Engine</span>
+            <span class="hero-tag"><span class="dot-yellow"></span> S3 Parquet Engine</span>
             <span class="hero-tag-outline">250+ Countries</span>
             <span class="hero-tag-outline">2,117 Categories</span>
         </div>
@@ -627,7 +649,7 @@ target_col_chips, target_col_btn = st.columns([3.6, 1.4])
 with target_col_chips:
     st.markdown(f"""
     <div class="chip-container" style="padding-top: 0.35rem;">
-        <span class="param-chip">📍 <strong>{formatted_location}</strong></span>
+        <span class="param-chip">📍 <strong>{location_summary}</strong></span>
         <span class="param-chip">🏷️ <strong>{category_summary}</strong></span>
         <span class="param-chip">🎯 <strong>{'Metro (+20%)' if buffer_ratio > 0 else 'Strict Limits'}</strong></span>
     </div>
@@ -643,25 +665,49 @@ if "last_query_meta" not in st.session_state:
     st.session_state.last_query_meta = {}
 
 
-# ---------------- STREAMLINED EXECUTION PIPELINE ----------------
+# ---------------- STREAMLINED MULTI-CITY PIPELINE ----------------
 if run_clicked:
-    if not selected_city or not selected_city.strip():
-        st.error("Please enter or select a target city.")
+    if not selected_cities:
+        st.error("Please select at least one target city in the sidebar.")
         st.stop()
 
     start_time = time.time()
     
-    # Progress container that is replaced with clean result banner upon completion
+    # Clean progress container
     progress_placeholder = st.empty()
-    status_box = progress_placeholder.status("Executing Extraction Pipeline...", expanded=True)
+    status_box = progress_placeholder.status(f"Resolving boundaries for {len(selected_cities)} city/cities...", expanded=True)
 
     try:
-        # Phase 1: Geocoding (Offline First)
-        status_box.write(f"📍 **Phase 1: Resolving spatial coordinates for '{formatted_location}'...**")
-        loc_details = cached_geocode_location(formatted_location, buffer_ratio=buffer_ratio)
-        bbox = loc_details["bounding_box"]
-        display_address = loc_details["display_name"]
-        
+        # Phase 1: Multi-City Coordinate Resolution (Offline First)
+        city_bboxes = []
+        center_lat = 0.0
+        center_lon = 0.0
+
+        if len(selected_cities) == 1:
+            c = selected_cities[0]
+            loc_query = loc_service.format_location_query(city=c, state=selected_state, country=selected_country)
+            status_box.write(f"📍 **Phase 1: Resolving coordinates for '{c}'...**")
+            loc_details = cached_geocode_location(loc_query, buffer_ratio=buffer_ratio)
+            bbox = loc_details["bounding_box"]
+            display_address = loc_details["display_name"]
+            center_lat = loc_details["latitude"]
+            center_lon = loc_details["longitude"]
+        else:
+            status_box.write(f"📍 **Phase 1: Computing enclosing bounding box for {len(selected_cities)} cities...**")
+            for c in selected_cities:
+                c_query = loc_service.format_location_query(city=c, state=selected_state, country=selected_country)
+                c_details = cached_geocode_location(c_query, buffer_ratio=buffer_ratio)
+                city_bboxes.append(c_details["bounding_box"])
+
+            min_lon = min(b[0] for b in city_bboxes)
+            min_lat = min(b[1] for b in city_bboxes)
+            max_lon = max(b[2] for b in city_bboxes)
+            max_lat = max(b[3] for b in city_bboxes)
+            bbox = (round(min_lon, 4), round(min_lat, 4), round(max_lon, 4), round(max_lat, 4))
+            display_address = f"{len(selected_cities)} Cities in {selected_state}, {selected_country}"
+            center_lat = round((min_lat + max_lat) / 2.0, 4)
+            center_lon = round((min_lon + max_lon) / 2.0, 4)
+
         status_box.write(
             f"✅ **Location Resolved**: `{display_address}`\n\n"
             f"📐 **Bounding Box**: `[{bbox[0]:.4f}, {bbox[1]:.4f}, {bbox[2]:.4f}, {bbox[3]:.4f}]`"
@@ -686,18 +732,18 @@ if run_clicked:
         if total_extracted == 0:
             progress_placeholder.empty()
             st.warning(
-                f"No businesses found in **{formatted_location}** for **{category_summary}**. "
-                "Try enabling 'Include Metro / Suburbs (+20%)' or broadening your category criteria."
+                f"No businesses found in **{display_address}** for **{category_summary}**. "
+                "Try enabling 'Include Metro / Suburbs (+20%)' or selecting additional categories."
             )
             st.session_state.global_places_df = None
             st.stop()
 
-        # Cleanly replace the status box with a high-fashion black & yellow completion banner
+        # High-contrast Black & Yellow Completion Banner (Zero broken icon ligatures)
         progress_placeholder.empty()
         st.markdown(f"""
         <div class="result-banner">
             <span class="banner-badge">COMPLETED</span>
-            <span>Successfully extracted <strong>{total_extracted:,}</strong> businesses in <strong>{total_time}s</strong></span>
+            <span>Successfully extracted <strong>{total_extracted:,}</strong> businesses across <strong>{display_address}</strong> in <strong>{total_time}s</strong></span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -706,14 +752,15 @@ if run_clicked:
         st.session_state.last_query_meta = {
             "country": selected_country,
             "state": selected_state,
-            "city": selected_city,
+            "city_slug": cat_city_slug,
+            "location_label": display_address,
             "category_label": category_summary,
             "cat_slug": cat_slug_for_file,
             "total": total_extracted,
             "duration": total_time,
             "display_name": display_address,
-            "center_lat": loc_details["latitude"],
-            "center_lon": loc_details["longitude"],
+            "center_lat": center_lat,
+            "center_lon": center_lon,
         }
 
     except Exception as e:
@@ -816,12 +863,39 @@ if st.session_state.global_places_df is not None and not st.session_state.global
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # Standard Export File Naming: {country}_{state}_{city_slug}_{category}.csv
+    filename_country = slugify(meta.get("country", "country"))
+    filename_state = slugify(meta.get("state", "state"))
+    filename_city = slugify(meta.get("city_slug", "directory"))
+    filename_cat = slugify(meta.get("cat_slug", "all"))
+    export_filename = f"{filename_country}_{filename_state}_{filename_city}_{filename_cat}.csv"
+
+    # Display Columns
+    display_columns = [
+        "name", "category", "phone", "website", "email",
+        "street_address", "locality", "postcode", "region", "country"
+    ]
+    available_cols = [c for c in display_columns if c in df.columns]
+
     # Tabs for Data View and Map View
     tab_data, tab_map = st.tabs(["📋 Directory Dataset", "🗺️ Geographic Map"])
 
     with tab_data:
-        # Filter Controls
-        f_col1, f_col2, f_col3, f_col4, f_col5 = st.columns([1.5, 1.5, 1.5, 1.5, 3])
+        # ---------------- TOP ACTION & DOWNLOAD BAR ----------------
+        top_bar_col_dl, top_bar_col_search = st.columns([1.8, 3.2])
+        
+        # Prepare filtered dataframe
+        view_df = df.copy()
+
+        with top_bar_col_search:
+            search_name = st.text_input(
+                "Filter dataset by name",
+                placeholder="🔍 Search businesses in real-time...",
+                label_visibility="collapsed"
+            )
+
+        # Filters Row
+        f_col1, f_col2, f_col3, f_col4 = st.columns(4)
         with f_col1:
             filt_phone = st.checkbox("Only with Phone", value=False)
         with f_col2:
@@ -830,11 +904,8 @@ if st.session_state.global_places_df is not None and not st.session_state.global
             filt_email = st.checkbox("Only with Email", value=False)
         with f_col4:
             filt_addr = st.checkbox("Only with Address", value=False)
-        with f_col5:
-            search_name = st.text_input("Filter by name", placeholder="Type business name...", label_visibility="collapsed")
 
-        # Apply Filters
-        view_df = df.copy()
+        # Apply Real-Time Table Filters
         if filt_phone:
             view_df = view_df[view_df["phone"].str.strip().str.len() > 3]
         if filt_website:
@@ -846,15 +917,23 @@ if st.session_state.global_places_df is not None and not st.session_state.global
         if search_name.strip():
             view_df = view_df[view_df["name"].str.contains(search_name.strip(), case=False, na=False)]
 
-        st.caption(f"Showing **{len(view_df):,}** of **{total_count:,}** extracted businesses")
+        csv_bytes = view_df[available_cols].to_csv(index=False).encode("utf-8")
 
-        # Interactive Dataframe with rich columns
-        display_columns = [
-            "name", "category", "phone", "website", "email",
-            "street_address", "locality", "postcode", "region", "country"
-        ]
-        available_cols = [c for c in display_columns if c in view_df.columns]
+        # Top Prominent Download Button (Immediately Visible)
+        with top_bar_col_dl:
+            st.download_button(
+                label=f"📥 Download CSV ({len(view_df):,} Places)",
+                data=csv_bytes,
+                file_name=export_filename,
+                mime="text/csv",
+                type="primary",
+                key="top_download_csv_btn",
+                use_container_width=True
+            )
 
+        st.caption(f"Displaying **{len(view_df):,}** of **{total_count:,}** extracted businesses")
+
+        # Interactive Dataframe
         st.dataframe(
             view_df[available_cols],
             use_container_width=True,
@@ -873,24 +952,15 @@ if st.session_state.global_places_df is not None and not st.session_state.global
             }
         )
 
-        # Standard Export File Naming: {country}_{state}_{city}_{category}.csv
-        filename_country = slugify(meta.get("country", "country"))
-        filename_state = slugify(meta.get("state", "state"))
-        filename_city = slugify(meta.get("city", "city"))
-        filename_cat = slugify(meta.get("cat_slug", "directory"))
-        export_filename = f"{filename_country}_{filename_state}_{filename_city}_{filename_cat}.csv"
-
-        # CSV Download in High-Contrast Black & Yellow Pill Button
-        csv_bytes = view_df[available_cols].to_csv(index=False).encode("utf-8")
-        
-        col_dl, col_blank = st.columns([2.5, 4])
-        with col_dl:
+        # Bottom Download Button (For after reviewing the table)
+        b_col_dl, b_col_spacer = st.columns([2.2, 3.8])
+        with b_col_dl:
             st.download_button(
-                label=f"📥 Download Dataset ({export_filename})",
+                label=f"📥 Download Filtered CSV ({len(view_df):,} Records)",
                 data=csv_bytes,
                 file_name=export_filename,
                 mime="text/csv",
-                type="primary",
+                key="bottom_download_csv_btn",
                 use_container_width=True
             )
 
@@ -902,9 +972,9 @@ if st.session_state.global_places_df is not None and not st.session_state.global
             map_data = map_data.dropna(subset=["latitude", "longitude"])
 
             if not map_data.empty:
-                st.caption(f"Displaying **{len(map_data):,}** geographic points across {meta.get('city', 'the city')}:")
+                st.caption(f"Displaying **{len(map_data):,}** geographic points across {meta.get('location_label', 'selected area')}:")
                 st.map(map_data, latitude="latitude", longitude="longitude", size=18)
             else:
-                st.info("No valid latitude/longitude coordinates available to map.")
+                st.info("No valid coordinates available to map.")
         else:
             st.info("Coordinates not present in dataset.")
