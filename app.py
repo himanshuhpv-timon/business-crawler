@@ -3,6 +3,7 @@ app.py - Desktop-Grade Global Business Directory Extractor
 Powered by Streamlit, DuckDB, Overture Maps S3, and GeonamesCache.
 Features global cascading location selectors, multi-category stacking,
 keyword clubbing, and full directory extraction without website filters.
+Styled with a static, always-visible sidebar and responsive modern UI.
 """
 
 import logging
@@ -21,7 +22,7 @@ from overture_fetcher import fetch_overture_places
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("global_extractor_app")
 
-# Set Page Config
+# Set Page Config (initial_sidebar_state="expanded")
 st.set_page_config(
     page_title="Global Business Directory Extractor",
     page_icon="🌍",
@@ -29,177 +30,226 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for sleek, premium Apple / macOS Human Interface Guidelines aesthetic
+# Custom CSS for modern, professional theme with static sidebar and responsive layout
 st.markdown("""
 <style>
-    /* 1. Typography: Apple System Fonts & Clean Weights */
+    /* 1. Global Typography & Color Palette */
     html, body, [class*="css"], [class*="st-"], div, span, button, input, select, textarea {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    }
+    
+    body, [data-testid="stAppViewContainer"] {
+        background-color: #F8FAFC !important;
+        color: #0F172A !important;
     }
     
     h1, h2, h3, h4, h5, h6, .main-title {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-        font-weight: 600 !important;
-        color: #1D1D1F !important;
+        font-weight: 700 !important;
+        color: #0F172A !important;
         letter-spacing: -0.02em !important;
     }
     
     p, label, span, .subtitle {
         font-weight: 400 !important;
-        color: #424245 !important;
+        color: #475569 !important;
     }
 
-    /* 2. Window Chrome & Desktop Canvas Feel */
-    #MainMenu { visibility: hidden; }
-    header { visibility: hidden; }
-    footer { visibility: hidden; }
+    /* 2. Hide Streamlit Headers, Menus & Footers */
+    #MainMenu { visibility: hidden !important; display: none !important; }
+    header { visibility: hidden !important; display: none !important; }
+    footer { visibility: hidden !important; display: none !important; }
     
+    /* Hide the collapse/expand toggle completely to keep sidebar locked */
+    [data-testid="collapsedControl"],
+    button[data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarCollapseButton"],
+    button[kind="header"],
+    [data-testid="stSidebarHeader"] button {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    /* 3. Static, Permanently-Visible Sidebar */
+    [data-testid="stSidebar"] {
+        display: block !important;
+        visibility: visible !important;
+        transform: none !important;
+        margin-left: 0 !important;
+        min-width: 320px !important;
+        max-width: 380px !important;
+        background-color: #FFFFFF !important;
+        border-right: 1px solid #E2E8F0 !important;
+        box-shadow: 2px 0 12px rgba(15, 23, 42, 0.03) !important;
+    }
+
+    [data-testid="stSidebarContent"] {
+        visibility: visible !important;
+        display: block !important;
+        padding-top: 1.5rem !important;
+        padding-bottom: 2.5rem !important;
+    }
+
+    /* 4. Canvas Layout & Container Padding */
     .block-container {
         padding-top: 1.8rem !important;
         padding-bottom: 2.5rem !important;
-        max-width: 96% !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+        max-width: 98% !important;
     }
 
-    [data-testid="stAppViewContainer"] {
-        background-color: #FBFBFD !important;
-    }
-
-    [data-testid="stSidebar"] {
-        background-color: #F5F5F7 !important;
-        border-right: 1px solid #E5E5EA !important;
-    }
-
-    /* 3. Header & Badges */
     .main-title {
-        font-size: 2.2rem !important;
-        margin-bottom: 0.25rem !important;
-    }
-    .subtitle {
-        font-size: 1.02rem !important;
-        color: #6E6E73 !important;
-        line-height: 1.5 !important;
-        margin-bottom: 1.4rem !important;
-    }
-    .badge-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.45rem;
-        margin-bottom: 0.85rem;
-    }
-    .badge {
-        display: inline-block;
-        padding: 0.28rem 0.72rem;
-        font-size: 0.78rem;
-        font-weight: 500;
-        border-radius: 9999px;
-        background-color: #FFFFFF;
-        color: #1D1D1F;
-        border: 1px solid #F5F5F7;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-    }
-    .badge-highlight {
-        background-color: #E8F2FF !important;
-        color: #0071E3 !important;
-        border-color: #CCE3FF !important;
+        font-size: 2.25rem !important;
+        margin-bottom: 0.35rem !important;
+        line-height: 1.2 !important;
     }
 
-    /* 4. Metric Cards: Soft Floating Geometry */
+    .subtitle {
+        font-size: 1.05rem !important;
+        color: #64748B !important;
+        line-height: 1.5 !important;
+        margin-bottom: 1.6rem !important;
+    }
+
+    /* 5. Modern Metric Cards */
     .metric-card {
         background: #FFFFFF !important;
-        border: 1px solid #F5F5F7 !important;
+        border: 1px solid #E2E8F0 !important;
         border-radius: 14px !important;
         padding: 1.2rem 0.9rem !important;
         text-align: center !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
-        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04) !important;
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease !important;
     }
     .metric-card:hover {
         transform: translateY(-1px) !important;
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06) !important;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07) !important;
     }
     .metric-value {
         font-size: 1.95rem !important;
-        font-weight: 600 !important;
-        color: #1D1D1F !important;
+        font-weight: 700 !important;
+        color: #0F172A !important;
         line-height: 1.2 !important;
     }
     .metric-label {
-        font-size: 0.74rem !important;
-        color: #86868B !important;
+        font-size: 0.73rem !important;
+        color: #64748B !important;
         text-transform: uppercase !important;
         letter-spacing: 0.08em !important;
         margin-top: 0.35rem !important;
         font-weight: 600 !important;
     }
 
-    /* 5. Pill Buttons with Smooth Lift */
+    /* 6. Pill Buttons with Vibrant Primary Accent & Smooth Lift */
     .stButton > button {
-        border-radius: 20px !important;
-        font-weight: 500 !important;
-        font-size: 0.92rem !important;
-        padding: 0.55rem 1.4rem !important;
+        border-radius: 24px !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        padding: 0.6rem 1.6rem !important;
         border: none !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
-        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15) !important;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
     .stButton > button:hover {
         transform: translateY(-1px) !important;
-        box-shadow: 0 5px 14px rgba(0, 0, 0, 0.08) !important;
+        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.28) !important;
     }
     .stButton > button:active {
         transform: translateY(0px) !important;
     }
     .stButton > button[kind="primary"] {
-        background: #0071E3 !important;
+        background: #2563EB !important;
         color: #FFFFFF !important;
     }
     .stButton > button[kind="primary"]:hover {
-        background: #0077ED !important;
-        box-shadow: 0 6px 16px rgba(0, 113, 227, 0.28) !important;
+        background: #1D4ED8 !important;
     }
 
     .stDownloadButton > button {
-        border-radius: 20px !important;
-        font-weight: 500 !important;
+        border-radius: 24px !important;
+        font-weight: 600 !important;
         font-size: 0.92rem !important;
-        padding: 0.55rem 1.4rem !important;
+        padding: 0.6rem 1.6rem !important;
         border: none !important;
-        background: #0071E3 !important;
+        background: #2563EB !important;
         color: #FFFFFF !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
-        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15) !important;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
     .stDownloadButton > button:hover {
-        background: #0077ED !important;
+        background: #1D4ED8 !important;
         transform: translateY(-1px) !important;
-        box-shadow: 0 6px 16px rgba(0, 113, 227, 0.28) !important;
+        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.28) !important;
     }
 
-    /* 6. Soft Geometry for Containers, Tables & Widgets */
+    /* 7. Soft Rounded Containers, Alerts & Status Widgets */
     [data-testid="stDataFrame"], [data-testid="stTable"], .stDataFrame {
         border-radius: 14px !important;
         overflow: hidden !important;
-        border: 1px solid #F5F5F7 !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+        border: 1px solid #E2E8F0 !important;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04) !important;
         background-color: #FFFFFF !important;
     }
 
     div[data-testid="stExpander"], div[data-testid="stStatusWidget"], div[data-testid="stAlert"] {
         border-radius: 14px !important;
-        border: 1px solid #F5F5F7 !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+        border: 1px solid #E2E8F0 !important;
+        box-shadow: 0 3px 10px rgba(15, 23, 42, 0.03) !important;
         background-color: #FFFFFF !important;
     }
 
-    /* 7. Input Elements & Selectboxes */
+    /* 8. Modern Input Styling */
     [data-testid="stSidebar"] [data-baseweb="select"],
     [data-testid="stSidebar"] [data-baseweb="input"],
     [data-testid="stSidebar"] .stTextInput input,
     .stTextInput input,
     [data-baseweb="select"] > div {
-        border-radius: 12px !important;
-        border: 1px solid #E5E5EA !important;
+        border-radius: 10px !important;
+        border: 1px solid #CBD5E1 !important;
         background-color: #FFFFFF !important;
+    }
+
+    /* 9. Mobile & Tablet Responsiveness */
+    @media (max-width: 992px) {
+        .block-container {
+            padding-left: 1.25rem !important;
+            padding-right: 1.25rem !important;
+        }
+        [data-testid="column"] {
+            min-width: 46% !important;
+            flex: 1 1 46% !important;
+            margin-bottom: 0.5rem !important;
+        }
+    }
+
+    @media (max-width: 768px) {
+        [data-testid="stAppViewContainer"] {
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        [data-testid="stSidebar"] {
+            position: relative !important;
+            width: 100% !important;
+            min-width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            border-right: none !important;
+            border-bottom: 1px solid #E2E8F0 !important;
+            box-shadow: none !important;
+        }
+        [data-testid="column"] {
+            min-width: 100% !important;
+            flex: 1 1 100% !important;
+            margin-bottom: 0.6rem !important;
+        }
+        .main-title {
+            font-size: 1.8rem !important;
+        }
+        .block-container {
+            padding-left: 0.85rem !important;
+            padding-right: 0.85rem !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -246,7 +296,7 @@ def cached_query_overture(
 
 # ---------------- SIDEBAR: GLOBAL CASCADING & CATEGORY SELECTORS ----------------
 with st.sidebar:
-    st.image("https://img.icons8.com/isometric/100/globe.png", width=60)
+    st.image("https://img.icons8.com/isometric/100/globe.png", width=56)
     st.title("Search Parameters")
     st.markdown("Global directory extraction powered by DuckDB & Overture Maps.")
 
@@ -354,18 +404,11 @@ with st.sidebar:
 
 # ---------------- MAIN DASHBOARD ----------------
 st.markdown('<div class="main-title">🌍 Global Business Directory Extractor</div>', unsafe_allow_html=True)
-
-st.markdown("""
-<div class="badge-container">
-    <span class="badge badge-highlight">⚡ 2–5s Streaming</span>
-    <span class="badge">🌐 250+ Countries</span>
-    <span class="badge">📚 2,117 Overture Categories</span>
-    <span class="badge">🔍 Keyword Clubbing</span>
-    <span class="badge">📂 Multi-Category Stacking</span>
-    <span class="badge">🚀 100% Free / Zero API Keys</span>
-</div>
-<div class="subtitle">Extract verified business directories with phone numbers, websites, native emails, physical street addresses, and exact coordinates.</div>
-""", unsafe_allow_html=True)
+st.markdown(
+    '<div class="subtitle">Extract verified business directories with phone numbers, websites, native emails, '
+    'physical street addresses, and exact coordinates directly from Overture Maps.</div>',
+    unsafe_allow_html=True
+)
 
 # Build formatted location query string
 formatted_location = loc_service.format_location_query(
