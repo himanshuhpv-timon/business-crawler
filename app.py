@@ -1,9 +1,9 @@
 """
-app.py - Desktop-Grade Global Business Directory Extractor
-Powered by Streamlit, DuckDB, Overture Maps S3, and GeonamesCache.
+app.py - High-Performance Global Business Directory Extractor
+Powered by Streamlit, DuckDB, Overture Maps S3, and GeoNamesCache.
 Features global cascading location selectors, multi-category stacking,
-keyword clubbing, and full directory extraction without website filters.
-Styled with a static, always-visible sidebar and responsive modern UI.
+keyword clubbing, offline 0ms geocoding, and unlimited record extraction.
+Styled with a warm, minimalist, high-end design inspired by modern executive dashboards.
 """
 
 import logging
@@ -22,44 +22,44 @@ from overture_fetcher import fetch_overture_places
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("global_extractor_app")
 
-# Set Page Config (initial_sidebar_state="expanded")
+# Page Configuration
 st.set_page_config(
-    page_title="Global Business Directory Extractor",
+    page_title="Directory • Global Business Extractor",
     page_icon="🌍",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for modern, professional theme with static sidebar and responsive layout
+# Custom CSS for Modern, Minimalist, Warm Executive Aesthetic (No Apple Blue)
 st.markdown("""
 <style>
-    /* 1. Global Typography & Color Palette */
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    /* 1. Global Typography & Warm Porcelain Canvas */
     html, body, [class*="css"], [class*="st-"], div, span, button, input, select, textarea {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-    }
-    
-    body, [data-testid="stAppViewContainer"] {
-        background-color: #F8FAFC !important;
-        color: #0F172A !important;
-    }
-    
-    h1, h2, h3, h4, h5, h6, .main-title {
-        font-weight: 700 !important;
-        color: #0F172A !important;
-        letter-spacing: -0.02em !important;
-    }
-    
-    p, label, span, .subtitle {
-        font-weight: 400 !important;
-        color: #475569 !important;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     }
 
-    /* 2. Hide Streamlit Headers, Menus & Footers */
+    body, [data-testid="stAppViewContainer"] {
+        background-color: #F7F7FA !important;
+        color: #18181B !important;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-weight: 700 !important;
+        color: #18181B !important;
+        letter-spacing: -0.025em !important;
+    }
+
+    p, label, span {
+        color: #52525B !important;
+    }
+
+    /* 2. Hide Clutter & Lock Static Sidebar */
     #MainMenu { visibility: hidden !important; display: none !important; }
     header { visibility: hidden !important; display: none !important; }
     footer { visibility: hidden !important; display: none !important; }
-    
-    /* Hide the collapse/expand toggle completely to keep sidebar locked */
+
     [data-testid="collapsedControl"],
     button[data-testid="stSidebarCollapseButton"],
     [data-testid="stSidebarCollapseButton"],
@@ -70,7 +70,6 @@ st.markdown("""
         pointer-events: none !important;
     }
 
-    /* 3. Static, Permanently-Visible Sidebar */
     [data-testid="stSidebar"] {
         display: block !important;
         visibility: visible !important;
@@ -79,8 +78,8 @@ st.markdown("""
         min-width: 320px !important;
         max-width: 380px !important;
         background-color: #FFFFFF !important;
-        border-right: 1px solid #E2E8F0 !important;
-        box-shadow: 2px 0 12px rgba(15, 23, 42, 0.03) !important;
+        border-right: 1px solid #ECECEF !important;
+        box-shadow: 2px 0 20px rgba(0, 0, 0, 0.02) !important;
     }
 
     [data-testid="stSidebarContent"] {
@@ -90,136 +89,272 @@ st.markdown("""
         padding-bottom: 2.5rem !important;
     }
 
-    /* 4. Canvas Layout & Container Padding */
     .block-container {
-        padding-top: 1.8rem !important;
-        padding-bottom: 2.5rem !important;
-        padding-left: 2rem !important;
-        padding-right: 2rem !important;
+        padding-top: 2rem !important;
+        padding-bottom: 3rem !important;
+        padding-left: 2.2rem !important;
+        padding-right: 2.2rem !important;
         max-width: 98% !important;
     }
 
-    .main-title {
-        font-size: 2.25rem !important;
-        margin-bottom: 0.35rem !important;
-        line-height: 1.2 !important;
+    /* 3. Hero Header Section */
+    .hero-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.8rem;
     }
 
-    .subtitle {
-        font-size: 1.05rem !important;
-        color: #64748B !important;
-        line-height: 1.5 !important;
-        margin-bottom: 1.6rem !important;
+    .hero-title-group {
+        display: flex;
+        flex-direction: column;
     }
 
-    /* 5. Modern Metric Cards */
-    .metric-card {
-        background: #FFFFFF !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 14px !important;
-        padding: 1.2rem 0.9rem !important;
-        text-align: center !important;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04) !important;
-        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease !important;
+    .hero-badge-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 0.4rem;
     }
-    .metric-card:hover {
-        transform: translateY(-1px) !important;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07) !important;
+
+    .hero-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #FFFFFF;
+        border: 1px solid #ECECEF;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #71717A;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
     }
-    .metric-value {
-        font-size: 1.95rem !important;
-        font-weight: 700 !important;
-        color: #0F172A !important;
-        line-height: 1.2 !important;
+
+    .hero-tag .dot-terracotta {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background-color: #E0583B;
     }
-    .metric-label {
-        font-size: 0.73rem !important;
-        color: #64748B !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.08em !important;
+
+    .hero-tag .dot-green {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background-color: #10B981;
+    }
+
+    .hero-title {
+        font-size: 2.4rem !important;
+        font-weight: 800 !important;
+        color: #18181B !important;
+        letter-spacing: -0.03em !important;
+        line-height: 1.15 !important;
+        margin: 0 !important;
+    }
+
+    .hero-title span {
+        color: #E0583B !important;
+    }
+
+    .hero-subtitle {
+        font-size: 1.02rem !important;
+        color: #71717A !important;
         margin-top: 0.35rem !important;
-        font-weight: 600 !important;
+        font-weight: 400 !important;
     }
 
-    /* 6. Pill Buttons with Vibrant Primary Accent & Smooth Lift */
+    /* 4. Action Banner & Target Chips */
+    .target-banner {
+        background: #FFFFFF;
+        border: 1px solid #ECECEF;
+        border-radius: 20px;
+        padding: 1rem 1.4rem;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.025);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .chip-container {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+    }
+
+    .param-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #F4F4F7;
+        border: 1px solid #EBEBED;
+        padding: 0.35rem 0.85rem;
+        border-radius: 9999px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: #27272A;
+    }
+
+    .param-chip strong {
+        color: #18181B;
+        font-weight: 700;
+    }
+
+    /* 5. Terracotta Primary Buttons & Obsidian Download Buttons */
     .stButton > button {
-        border-radius: 24px !important;
+        border-radius: 9999px !important;
         font-weight: 600 !important;
         font-size: 0.95rem !important;
-        padding: 0.6rem 1.6rem !important;
+        padding: 0.62rem 1.8rem !important;
         border: none !important;
-        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15) !important;
+        background-color: #E0583B !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 4px 14px rgba(224, 88, 59, 0.28) !important;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
+
     .stButton > button:hover {
-        transform: translateY(-1px) !important;
-        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.28) !important;
+        background-color: #D44A2D !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 24px rgba(224, 88, 59, 0.4) !important;
     }
+
     .stButton > button:active {
         transform: translateY(0px) !important;
     }
-    .stButton > button[kind="primary"] {
-        background: #2563EB !important;
-        color: #FFFFFF !important;
-    }
-    .stButton > button[kind="primary"]:hover {
-        background: #1D4ED8 !important;
-    }
 
     .stDownloadButton > button {
-        border-radius: 24px !important;
+        border-radius: 9999px !important;
         font-weight: 600 !important;
         font-size: 0.92rem !important;
-        padding: 0.6rem 1.6rem !important;
+        padding: 0.62rem 1.8rem !important;
         border: none !important;
-        background: #2563EB !important;
+        background-color: #18181B !important;
         color: #FFFFFF !important;
-        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15) !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
     }
+
     .stDownloadButton > button:hover {
-        background: #1D4ED8 !important;
-        transform: translateY(-1px) !important;
-        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.28) !important;
+        background-color: #27272A !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25) !important;
     }
 
-    /* 7. Soft Rounded Containers, Alerts & Status Widgets */
+    /* 6. Executive Metric Cards (Financial Dashboard Style) */
+    .metric-card-modern {
+        background: #FFFFFF !important;
+        border: 1px solid #ECECEF !important;
+        border-radius: 20px !important;
+        padding: 1.3rem 1.1rem !important;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.03) !important;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .metric-card-modern:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06) !important;
+        border-color: #E2E2E6 !important;
+    }
+
+    .metric-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.6rem;
+    }
+
+    .metric-icon-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #F7F7FA;
+        border: 1px solid #EBEBED;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+    }
+
+    .metric-subbadge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #E0583B;
+        background: rgba(224, 88, 59, 0.08);
+        padding: 0.15rem 0.55rem;
+        border-radius: 9999px;
+    }
+
+    .metric-number {
+        font-size: 2.1rem !important;
+        font-weight: 800 !important;
+        color: #18181B !important;
+        line-height: 1.15 !important;
+        letter-spacing: -0.03em !important;
+        margin-bottom: 0.3rem !important;
+    }
+
+    .metric-title {
+        font-size: 0.72rem !important;
+        color: #71717A !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.07em !important;
+        font-weight: 600 !important;
+    }
+
+    /* 7. Rounded Containers, DataTables & Inputs */
     [data-testid="stDataFrame"], [data-testid="stTable"], .stDataFrame {
-        border-radius: 14px !important;
+        border-radius: 20px !important;
         overflow: hidden !important;
-        border: 1px solid #E2E8F0 !important;
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04) !important;
+        border: 1px solid #ECECEF !important;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.03) !important;
         background-color: #FFFFFF !important;
     }
 
     div[data-testid="stExpander"], div[data-testid="stStatusWidget"], div[data-testid="stAlert"] {
-        border-radius: 14px !important;
-        border: 1px solid #E2E8F0 !important;
-        box-shadow: 0 3px 10px rgba(15, 23, 42, 0.03) !important;
+        border-radius: 18px !important;
+        border: 1px solid #ECECEF !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02) !important;
         background-color: #FFFFFF !important;
     }
 
-    /* 8. Modern Input Styling */
+    /* Sidebar Form Controls */
     [data-testid="stSidebar"] [data-baseweb="select"],
     [data-testid="stSidebar"] [data-baseweb="input"],
     [data-testid="stSidebar"] .stTextInput input,
     .stTextInput input,
     [data-baseweb="select"] > div {
-        border-radius: 10px !important;
-        border: 1px solid #CBD5E1 !important;
+        border-radius: 12px !important;
+        border: 1px solid #E2E2E6 !important;
         background-color: #FFFFFF !important;
+        color: #18181B !important;
     }
 
-    /* 9. Mobile & Tablet Responsiveness */
+    /* Checkbox & Radio Accents in Terracotta */
+    [data-testid="stCheckbox"] [aria-checked="true"] {
+        background-color: #E0583B !important;
+        border-color: #E0583B !important;
+    }
+
+    /* Responsive Grid */
     @media (max-width: 992px) {
-        .block-container {
-            padding-left: 1.25rem !important;
-            padding-right: 1.25rem !important;
-        }
+        .hero-title { font-size: 1.9rem !important; }
         [data-testid="column"] {
             min-width: 46% !important;
             flex: 1 1 46% !important;
-            margin-bottom: 0.5rem !important;
+            margin-bottom: 0.6rem !important;
         }
     }
 
@@ -235,7 +370,7 @@ st.markdown("""
             max-width: 100% !important;
             height: auto !important;
             border-right: none !important;
-            border-bottom: 1px solid #E2E8F0 !important;
+            border-bottom: 1px solid #ECECEF !important;
             box-shadow: none !important;
         }
         [data-testid="column"] {
@@ -243,12 +378,9 @@ st.markdown("""
             flex: 1 1 100% !important;
             margin-bottom: 0.6rem !important;
         }
-        .main-title {
-            font-size: 1.8rem !important;
-        }
         .block-container {
-            padding-left: 0.85rem !important;
-            padding-right: 0.85rem !important;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
         }
     }
 </style>
@@ -296,12 +428,11 @@ def cached_query_overture(
 
 # ---------------- SIDEBAR: GLOBAL CASCADING & CATEGORY SELECTORS ----------------
 with st.sidebar:
-    st.image("https://img.icons8.com/isometric/100/globe.png", width=56)
-    st.title("Search Parameters")
-    st.markdown("Global directory extraction powered by DuckDB & Overture Maps.")
+    st.markdown("### 🧭 Search Filters")
+    st.caption("Global directory pipeline powered by DuckDB & Overture Maps.")
 
     # 1. Geographic Location
-    st.subheader("1. Geographic Location")
+    st.markdown("#### 1. Location Parameters")
     default_country_idx = all_countries.index("United States") if "United States" in all_countries else 0
     selected_country = st.selectbox(
         "Country",
@@ -320,7 +451,7 @@ with st.sidebar:
         default_state_idx = states_list.index("Texas")
 
     selected_state = st.selectbox(
-        "State / Province / Region",
+        "State / Region",
         options=states_list,
         index=default_state_idx,
         help="Dynamically populated based on the selected country."
@@ -333,9 +464,9 @@ with st.sidebar:
         state_to_code=state_code_map
     )
 
-    city_mode = st.radio("City Selection Mode", ["Choose from City List", "Type Custom City"], horizontal=True)
+    city_mode = st.radio("City Mode", ["Standard City List", "Custom City Input"], horizontal=True)
 
-    if city_mode == "Choose from City List" and cities_list:
+    if city_mode == "Standard City List" and cities_list:
         default_city_idx = 0
         if "Austin" in cities_list:
             default_city_idx = cities_list.index("Austin")
@@ -345,71 +476,62 @@ with st.sidebar:
             default_city_idx = cities_list.index("London")
 
         selected_city = st.selectbox(
-            "City",
+            "Target City",
             options=cities_list,
             index=default_city_idx,
             help="Major cities (pop > 15,000) within the selected region."
         )
     else:
         selected_city = st.text_input(
-            "Enter City Name",
+            "Target City",
             value=cities_list[0] if cities_list else "Austin",
-            placeholder="e.g., Austin, Melbourne, Munich, Kyoto",
+            placeholder="e.g., Austin, Bhopal, Munich, Kyoto",
             help="Type any city or town name."
         )
 
     # Spatial Boundary Scope
-    st.subheader("2. Spatial Boundary Scope")
+    st.markdown("#### 2. Spatial Scope")
     scope_option = st.radio(
-        "Search Coverage Area",
-        options=["Strict City Limits Only", "Include Surrounding Metro / Suburbs (+20%)"],
+        "Boundary Radius",
+        options=["Strict City Limits", "Include Metro / Suburbs (+20%)"],
         index=0,
-        help="Strict limits restricts queries to exact municipal bounds. Surrounding Metro expands bounds to capture suburbs."
+        help="Strict limits restricts queries to municipal bounds. Metro expands bounds to capture surrounding suburbs."
     )
-    buffer_ratio = 0.20 if "Surrounding" in scope_option else 0.0
+    buffer_ratio = 0.20 if "Metro" in scope_option else 0.0
 
     # 3. Category & Keyword Selector
-    st.subheader("3. Business Categories")
+    st.markdown("#### 3. Business Industry")
     select_all_cats = st.checkbox(
-        "🌐 Select All Categories (Extract Entire City)",
+        "🌐 Extract All Categories (Full City)",
         value=False,
-        help="Check to extract all commercial businesses across all industries inside the bounding box."
+        help="Extract all commercial businesses across all industries inside the bounding box."
     )
 
     if select_all_cats:
-        st.info("ℹ️ **Extracting all business categories** without restriction.")
+        st.info("ℹ️ All 2,117 business categories enabled.")
         selected_categories: List[str] = []
         keyword_input = ""
     else:
-        # Category Keyword Clubbing Input
         keyword_input = st.text_input(
             "🔍 Keyword Search (Clubbing)",
             value="",
-            placeholder="e.g., restaurant, contractor, salon, medical",
-            help="Wildcard search matching primary and alternate categories. e.g. 'restaurant' automatically clubs thai_restaurant, italian_restaurant, etc."
+            placeholder="e.g., restaurant, contractor, clinic",
+            help="Wildcard search matching primary & alternate categories (e.g. 'restaurant' clubs thai_restaurant, italian_restaurant, etc.)."
         )
 
-        # Multi-select Dropdown
         default_cats = ["restaurant"] if not keyword_input and "restaurant" in all_categories else []
         selected_categories = st.multiselect(
-            "📂 Multi-Select Specific Categories",
+            "📂 Multi-Select Categories",
             options=all_categories,
             default=default_cats,
             help="Stack multiple standardized categories at once (e.g. plumber + electrician)."
         )
 
     st.markdown("---")
-    st.caption("⚡ **Fast Streaming Pipeline**: Nominatim Geocoding + DuckDB S3 Parquet Streaming (2–5 seconds).")
+    st.caption("⚡ **Zero API Keys**: DuckDB direct S3 Parquet streaming. Unlimited records.")
 
 
-# ---------------- MAIN DASHBOARD ----------------
-st.markdown('<div class="main-title">🌍 Global Business Directory Extractor</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="subtitle">Extract verified business directories with phone numbers, websites, native emails, '
-    'physical street addresses, and exact coordinates directly from Overture Maps.</div>',
-    unsafe_allow_html=True
-)
-
+# ---------------- MAIN DASHBOARD HERO ----------------
 # Build formatted location query string
 formatted_location = loc_service.format_location_query(
     city=selected_city,
@@ -419,32 +541,49 @@ formatted_location = loc_service.format_location_query(
 
 # Determine Category Display Text
 if select_all_cats:
-    category_summary = "All Categories (Full Directory)"
+    category_summary = "All Categories (Full City)"
     cat_slug_for_file = "all_categories"
 elif keyword_input.strip() and selected_categories:
-    category_summary = f"Keyword: '{keyword_input.strip()}' + {len(selected_categories)} selected categories"
+    category_summary = f"Keyword '{keyword_input.strip()}' + {len(selected_categories)} categories"
     cat_slug_for_file = f"{slugify(keyword_input)}_{slugify(selected_categories[0])}"
 elif keyword_input.strip():
-    category_summary = f"Keyword: '{keyword_input.strip()}' (Clubbing)"
+    category_summary = f"Keyword '{keyword_input.strip()}'"
     cat_slug_for_file = slugify(keyword_input)
 elif selected_categories:
-    category_summary = f"Categories: {', '.join(selected_categories[:3])}" + (f" (+{len(selected_categories)-3} more)" if len(selected_categories) > 3 else "")
-    cat_slug_for_file = "_".join([slugify(c) for c in selected_categories[:3]])
+    category_summary = f"{', '.join(selected_categories[:2])}" + (f" (+{len(selected_categories)-2} more)" if len(selected_categories) > 2 else "")
+    cat_slug_for_file = "_".join([slugify(c) for c in selected_categories[:2]])
 else:
-    category_summary = "All Categories (Default)"
+    category_summary = "All Categories"
     cat_slug_for_file = "all"
 
-# Run Controls
-col_btn, col_info = st.columns([1.2, 4])
-with col_btn:
-    run_clicked = st.button("🚀 Extract Businesses", type="primary", use_container_width=True)
+# Hero Header with Modern Warm Layout
+st.markdown(f"""
+<div class="hero-header">
+    <div class="hero-title-group">
+        <div class="hero-badge-row">
+            <span class="hero-tag"><span class="dot-terracotta"></span> Cloud Parquet Engine</span>
+            <span class="hero-tag"><span class="dot-green"></span> S3 Active</span>
+            <span class="hero-tag">250+ Countries</span>
+        </div>
+        <h1 class="hero-title">Business Directory <span>Crawler</span></h1>
+        <div class="hero-subtitle">High-speed geospatial business extraction directly from Overture Maps via DuckDB.</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-with col_info:
-    st.info(
-        f"📍 Location: **{formatted_location}** | "
-        f"🏷️ Target: **{category_summary}** | "
-        f"🎯 Scope: **{'Metro Area (+20%)' if buffer_ratio > 0 else 'Strict City Limits'}**"
-    )
+# Target Parameter Bar & Run Action
+target_col_chips, target_col_btn = st.columns([3.6, 1.4])
+with target_col_chips:
+    st.markdown(f"""
+    <div class="chip-container" style="padding-top: 0.35rem;">
+        <span class="param-chip">📍 <strong>{formatted_location}</strong></span>
+        <span class="param-chip">🏷️ <strong>{category_summary}</strong></span>
+        <span class="param-chip">🎯 <strong>{'Metro (+20%)' if buffer_ratio > 0 else 'Strict Limits'}</strong></span>
+    </div>
+    """, unsafe_allow_html=True)
+
+with target_col_btn:
+    run_clicked = st.button("🚀 Extract Businesses →", type="primary", use_container_width=True)
 
 # Session State Persistence
 if "global_places_df" not in st.session_state:
@@ -463,7 +602,7 @@ if run_clicked:
     status_box = st.status("Executing Extraction Pipeline...", expanded=True)
 
     try:
-        # Phase 1: Geocoding
+        # Phase 1: Geocoding (Offline First)
         status_box.write(f"📍 **Phase 1: Resolving spatial coordinates for '{formatted_location}'...**")
         loc_details = cached_geocode_location(formatted_location, buffer_ratio=buffer_ratio)
         bbox = loc_details["bounding_box"]
@@ -494,7 +633,7 @@ if run_clicked:
             status_box.update(label="Extraction Complete (0 results)", state="complete", expanded=False)
             st.warning(
                 f"No businesses found in **{formatted_location}** for **{category_summary}**. "
-                "Try enabling 'Include Surrounding Metro' in the sidebar or broadening your category criteria."
+                "Try enabling 'Include Metro / Suburbs (+20%)' or broadening your category criteria."
             )
             st.session_state.global_places_df = None
             st.stop()
@@ -524,7 +663,7 @@ if run_clicked:
         st.stop()
 
 
-# ---------------- RESULTS PRESENTATION & KPI CARDS ----------------
+# ---------------- RESULTS PRESENTATION & METRIC CARDS ----------------
 if st.session_state.global_places_df is not None and not st.session_state.global_places_df.empty:
     df = st.session_state.global_places_df
     meta = st.session_state.last_query_meta
@@ -535,54 +674,93 @@ if st.session_state.global_places_df is not None and not st.session_state.global
     with_email = df["email"].apply(lambda x: len(str(x).strip()) > 3).sum()
     with_address = df["street_address"].apply(lambda x: len(str(x).strip()) > 0).sum()
 
-    st.markdown("---")
-    st.subheader("📊 Extraction Metrics")
+    st.markdown("<br>", unsafe_allow_html=True)
 
+    # 6 Modern Executive Metric Cards
     col1, col2, col3, col4, col5, col6 = st.columns(6)
+
     with col1:
-        st.markdown(
-            f'<div class="metric-card"><div class="metric-value">{total_count:,}</div>'
-            '<div class="metric-label">Total Businesses</div></div>',
-            unsafe_allow_html=True
-        )
+        st.markdown(f"""
+        <div class="metric-card-modern">
+            <div class="metric-header-row">
+                <span class="metric-icon-circle">🏢</span>
+                <span class="metric-subbadge">100%</span>
+            </div>
+            <div class="metric-number">{total_count:,}</div>
+            <div class="metric-title">Total Places</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     with col2:
-        st.markdown(
-            f'<div class="metric-card"><div class="metric-value">{with_phone:,}</div>'
-            '<div class="metric-label">Phones</div></div>',
-            unsafe_allow_html=True
-        )
+        phone_pct = round((with_phone / total_count * 100), 1) if total_count > 0 else 0
+        st.markdown(f"""
+        <div class="metric-card-modern">
+            <div class="metric-header-row">
+                <span class="metric-icon-circle">📞</span>
+                <span class="metric-subbadge">{phone_pct}%</span>
+            </div>
+            <div class="metric-number">{with_phone:,}</div>
+            <div class="metric-title">Direct Phones</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     with col3:
-        st.markdown(
-            f'<div class="metric-card"><div class="metric-value">{with_website:,}</div>'
-            '<div class="metric-label">Websites</div></div>',
-            unsafe_allow_html=True
-        )
+        web_pct = round((with_website / total_count * 100), 1) if total_count > 0 else 0
+        st.markdown(f"""
+        <div class="metric-card-modern">
+            <div class="metric-header-row">
+                <span class="metric-icon-circle">🌐</span>
+                <span class="metric-subbadge">{web_pct}%</span>
+            </div>
+            <div class="metric-number">{with_website:,}</div>
+            <div class="metric-title">Websites</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     with col4:
-        st.markdown(
-            f'<div class="metric-card"><div class="metric-value">{with_email:,}</div>'
-            '<div class="metric-label">Native Emails</div></div>',
-            unsafe_allow_html=True
-        )
+        st.markdown(f"""
+        <div class="metric-card-modern">
+            <div class="metric-header-row">
+                <span class="metric-icon-circle">✉️</span>
+                <span class="metric-subbadge">Native</span>
+            </div>
+            <div class="metric-number">{with_email:,}</div>
+            <div class="metric-title">Native Emails</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     with col5:
-        st.markdown(
-            f'<div class="metric-card"><div class="metric-value">{with_address:,}</div>'
-            '<div class="metric-label">Physical Addresses</div></div>',
-            unsafe_allow_html=True
-        )
+        addr_pct = round((with_address / total_count * 100), 1) if total_count > 0 else 0
+        st.markdown(f"""
+        <div class="metric-card-modern">
+            <div class="metric-header-row">
+                <span class="metric-icon-circle">📍</span>
+                <span class="metric-subbadge">{addr_pct}%</span>
+            </div>
+            <div class="metric-number">{with_address:,}</div>
+            <div class="metric-title">Street Addresses</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     with col6:
-        st.markdown(
-            f'<div class="metric-card"><div class="metric-value">{meta.get("duration", 0)}s</div>'
-            '<div class="metric-label">Pipeline Time</div></div>',
-            unsafe_allow_html=True
-        )
+        st.markdown(f"""
+        <div class="metric-card-modern">
+            <div class="metric-header-row">
+                <span class="metric-icon-circle">⚡</span>
+                <span class="metric-subbadge">Cloud</span>
+            </div>
+            <div class="metric-number">{meta.get("duration", 0)}s</div>
+            <div class="metric-title">Pipeline Time</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Tabs for Data View and Map View
-    tab_data, tab_map = st.tabs(["📋 Directory Data Table", "🗺️ Geographic Coordinate Map"])
+    tab_data, tab_map = st.tabs(["📋 Directory Dataset", "🗺️ Geographic Map"])
 
     with tab_data:
-        # Table Filter Controls
+        # Clean Filter Controls
         f_col1, f_col2, f_col3, f_col4, f_col5 = st.columns([1.5, 1.5, 1.5, 1.5, 3])
         with f_col1:
             filt_phone = st.checkbox("Only with Phone", value=False)
@@ -593,7 +771,7 @@ if st.session_state.global_places_df is not None and not st.session_state.global
         with f_col4:
             filt_addr = st.checkbox("Only with Address", value=False)
         with f_col5:
-            search_name = st.text_input("Search Business Name", placeholder="Filter by name...", label_visibility="collapsed")
+            search_name = st.text_input("Filter by name", placeholder="Type business name...", label_visibility="collapsed")
 
         # Apply Filters
         view_df = df.copy()
@@ -642,13 +820,13 @@ if st.session_state.global_places_df is not None and not st.session_state.global
         filename_cat = slugify(meta.get("cat_slug", "directory"))
         export_filename = f"{filename_country}_{filename_state}_{filename_city}_{filename_cat}.csv"
 
-        # CSV Download
+        # CSV Download in Obsidian Pill Button
         csv_bytes = view_df[available_cols].to_csv(index=False).encode("utf-8")
         
         col_dl, col_blank = st.columns([2.5, 4])
         with col_dl:
             st.download_button(
-                label=f"📥 Download CSV ({export_filename})",
+                label=f"📥 Download Dataset ({export_filename})",
                 data=csv_bytes,
                 file_name=export_filename,
                 mime="text/csv",
@@ -659,7 +837,6 @@ if st.session_state.global_places_df is not None and not st.session_state.global
     with tab_map:
         if "latitude" in df.columns and "longitude" in df.columns:
             map_data = df.dropna(subset=["latitude", "longitude"]).copy()
-            # Ensure numeric coordinates
             map_data["latitude"] = pd.to_numeric(map_data["latitude"], errors="coerce")
             map_data["longitude"] = pd.to_numeric(map_data["longitude"], errors="coerce")
             map_data = map_data.dropna(subset=["latitude", "longitude"])
