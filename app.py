@@ -63,19 +63,21 @@ st.markdown("""
         letter-spacing: -0.03em !important;
     }
 
-    /* 2. Transparent Header to preserve mobile sidebar toggle */
+    /* 2. Transparent Header bar (Preserve toolbar for sidebar toggle button) */
     header[data-testid="stHeader"] {
         background: transparent !important;
-        color: transparent !important;
         height: 2.8rem !important;
         z-index: 99999 !important;
     }
-    header [data-testid="stToolbar"],
+
+    /* Hide 3-dots app menu, decoration line and badges, but KEEP toolbar for sidebar expand button */
     [data-testid="stDecoration"],
     #MainMenu,
     footer,
     [data-testid="manage-app-button"],
-    .viewerBadge_container__1QSob {
+    .viewerBadge_container__1QSob,
+    header [data-testid="stToolbar"] button[aria-label*="menu" i],
+    header [data-testid="stToolbar"] [data-testid="stMainMenu"] {
         display: none !important;
         visibility: hidden !important;
     }
@@ -83,17 +85,10 @@ st.markdown("""
     /* Desktop View (>= 769px): Permanently Open Static Sidebar */
     @media (min-width: 769px) {
         .mobile-filter-cta,
-        .mobile-close-sidebar {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-
-        [data-testid="collapsedControl"],
-        button[data-testid="stSidebarCollapseButton"],
+        .mobile-close-sidebar,
+        [data-testid="stExpandSidebarButton"],
         [data-testid="stSidebarCollapseButton"],
+        [data-testid="collapsedControl"],
         button[kind="header"],
         [data-testid="stSidebarHeader"] button {
             display: none !important;
@@ -486,13 +481,14 @@ st.markdown("""
 
     @media (max-width: 768px) {
         /* Mobile: Show sleek floating Filters button */
+        [data-testid="stExpandSidebarButton"],
         [data-testid="collapsedControl"] {
             display: inline-flex !important;
             visibility: visible !important;
             pointer-events: auto !important;
             position: fixed !important;
-            top: 0.85rem !important;
-            left: 0.85rem !important;
+            top: 0.75rem !important;
+            left: 0.75rem !important;
             z-index: 999999 !important;
             background-color: #000000 !important;
             color: #FFE600 !important;
@@ -504,6 +500,7 @@ st.markdown("""
             gap: 0.3rem !important;
         }
 
+        [data-testid="stExpandSidebarButton"] button,
         [data-testid="collapsedControl"] button {
             background: transparent !important;
             color: #FFE600 !important;
@@ -514,11 +511,13 @@ st.markdown("""
             align-items: center !important;
         }
 
+        [data-testid="stExpandSidebarButton"] svg,
         [data-testid="collapsedControl"] svg {
             color: #FFE600 !important;
             fill: #FFE600 !important;
         }
 
+        [data-testid="stExpandSidebarButton"]::after,
         [data-testid="collapsedControl"] button::after {
             content: " Filters";
             font-weight: 800;
@@ -946,49 +945,48 @@ st.markdown(f"""
 # Mobile-Only CTA Button to Open Sidebar Filters
 st.markdown("""
 <div class="mobile-filter-cta">
-    <button type="button" id="mobileFilterCtaBtn" class="mobile-cta-btn">
+    <button type="button" id="mobileFilterCtaBtn" onclick="openSidebarMobile()" class="mobile-cta-btn">
         🧭 Select Region & Categories ▾
     </button>
 </div>
-<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="
-    (function() {
-        function triggerSidebar() {
-            var sb = document.querySelector('section[data-testid=\x22stSidebar\x22]');
-            if (sb) {
-                sb.setAttribute('aria-expanded', 'true');
-                sb.classList.add('mobile-sidebar-force-open');
+<script>
+function openSidebarMobile() {
+    var selectors = [
+        '[data-testid="stExpandSidebarButton"] button',
+        '[data-testid="stExpandSidebarButton"]',
+        'button[data-testid="stExpandSidebarButton"]',
+        '[data-testid="collapsedControl"] button',
+        '[data-testid="collapsedControl"]',
+        'header button'
+    ];
+    for (var i = 0; i < selectors.length; i++) {
+        var el = document.querySelector(selectors[i]);
+        if (el) { el.click(); return; }
+    }
+    try {
+        if (window.parent && window.parent !== window) {
+            for (var j = 0; j < selectors.length; j++) {
+                var pel = window.parent.document.querySelector(selectors[j]);
+                if (pel) { pel.click(); return; }
             }
-            var selectors = [
-                '[data-testid=\x22collapsedControl\x22] button',
-                'button[aria-label=\x22Open sidebar\x22]',
-                'button[kind=\x22header\x22]',
-                'header button'
-            ];
-            for (var i = 0; i < selectors.length; i++) {
-                var el = document.querySelector(selectors[i]);
-                if (el) { el.click(); break; }
-            }
-            try {
-                if (window.parent && window.parent !== window) {
-                    var psb = window.parent.document.querySelector('section[data-testid=\x22stSidebar\x22]');
-                    if (psb) {
-                        psb.setAttribute('aria-expanded', 'true');
-                        psb.classList.add('mobile-sidebar-force-open');
-                    }
-                    for (var j = 0; j < selectors.length; j++) {
-                        var pel = window.parent.document.querySelector(selectors[j]);
-                        if (pel) { pel.click(); break; }
-                    }
-                }
-            } catch(e) {}
         }
+    } catch(e) {}
+    var sb = document.querySelector('section[data-testid="stSidebar"]');
+    if (sb) {
+        sb.setAttribute('aria-expanded', 'true');
+        sb.classList.add('mobile-sidebar-force-open');
+    }
+}
+</script>
+<img src="https://antigravity-trigger-action.invalid" onerror="
+    (function() {
         var btn = document.getElementById('mobileFilterCtaBtn');
         if (btn && !btn.dataset.bound) {
             btn.dataset.bound = 'true';
-            btn.addEventListener('click', triggerSidebar);
+            btn.addEventListener('click', openSidebarMobile);
             btn.addEventListener('touchend', function(e) {
                 e.preventDefault();
-                triggerSidebar();
+                openSidebarMobile();
             });
         }
     })();
