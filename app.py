@@ -33,7 +33,7 @@ st.set_page_config(
     page_title="Business Directory Crawler",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 # Custom CSS for Pure White Canvas + Jet Black & Electric Yellow Accents
@@ -63,46 +63,50 @@ st.markdown("""
         letter-spacing: -0.03em !important;
     }
 
-    /* 2. Hide Streamlit Headers, Menus & Locked Static Sidebar */
+    /* 2. Hide Menus & Footers */
     #MainMenu { visibility: hidden !important; display: none !important; }
     header { visibility: hidden !important; display: none !important; }
     footer { visibility: hidden !important; display: none !important; }
+    [data-testid="manage-app-button"], .viewerBadge_container__1QSob { display: none !important; }
 
-    [data-testid="collapsedControl"],
-    button[data-testid="stSidebarCollapseButton"],
-    [data-testid="stSidebarCollapseButton"],
-    button[kind="header"],
-    [data-testid="stSidebarHeader"] button {
-        display: none !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-    }
+    /* Desktop View (>= 769px): Permanently Open Static Sidebar */
+    @media (min-width: 769px) {
+        [data-testid="collapsedControl"],
+        button[data-testid="stSidebarCollapseButton"],
+        [data-testid="stSidebarCollapseButton"],
+        button[kind="header"],
+        [data-testid="stSidebarHeader"] button {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
 
-    [data-testid="stSidebar"] {
-        display: block !important;
-        visibility: visible !important;
-        transform: none !important;
-        margin-left: 0 !important;
-        min-width: 320px !important;
-        max-width: 380px !important;
-        background-color: #FFFFFF !important;
-        border-right: 1.5px solid #F3F4F6 !important;
-        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.02) !important;
-    }
+        [data-testid="stSidebar"] {
+            display: block !important;
+            visibility: visible !important;
+            transform: none !important;
+            margin-left: 0 !important;
+            min-width: 320px !important;
+            max-width: 380px !important;
+            background-color: #FFFFFF !important;
+            border-right: 1.5px solid #F3F4F6 !important;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.02) !important;
+        }
 
-    [data-testid="stSidebarContent"] {
-        visibility: visible !important;
-        display: block !important;
-        padding-top: 1.5rem !important;
-        padding-bottom: 2.5rem !important;
-    }
+        [data-testid="stSidebarContent"] {
+            visibility: visible !important;
+            display: block !important;
+            padding-top: 1.5rem !important;
+            padding-bottom: 2.5rem !important;
+        }
 
-    .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 3rem !important;
-        padding-left: 2.2rem !important;
-        padding-right: 2.2rem !important;
-        max-width: 98% !important;
+        .block-container {
+            padding-top: 2rem !important;
+            padding-bottom: 3rem !important;
+            padding-left: 2.2rem !important;
+            padding-right: 2.2rem !important;
+            max-width: 98% !important;
+        }
     }
 
     /* 3. Hero Header Section */
@@ -461,28 +465,105 @@ st.markdown("""
     }
 
     @media (max-width: 768px) {
-        [data-testid="stAppViewContainer"] {
-            display: flex !important;
-            flex-direction: column !important;
+        /* Mobile: Show sleek floating Filters button */
+        [data-testid="collapsedControl"] {
+            display: inline-flex !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            position: fixed !important;
+            top: 0.85rem !important;
+            left: 0.85rem !important;
+            z-index: 999999 !important;
+            background-color: #000000 !important;
+            color: #FFE600 !important;
+            border: 2px solid #000000 !important;
+            border-radius: 9999px !important;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+            padding: 0.35rem 0.85rem !important;
+            align-items: center !important;
+            gap: 0.3rem !important;
         }
-        [data-testid="stSidebar"] {
-            position: relative !important;
-            width: 100% !important;
-            min-width: 100% !important;
-            max-width: 100% !important;
-            height: auto !important;
-            border-right: none !important;
-            border-bottom: 1.5px solid #E5E7EB !important;
+
+        [data-testid="collapsedControl"] button {
+            background: transparent !important;
+            color: #FFE600 !important;
+            border: none !important;
             box-shadow: none !important;
+            padding: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
         }
+
+        [data-testid="collapsedControl"] svg {
+            color: #FFE600 !important;
+            fill: #FFE600 !important;
+        }
+
+        [data-testid="collapsedControl"] button::after {
+            content: " Filters";
+            font-weight: 800;
+            font-size: 0.82rem;
+            color: #FFE600 !important;
+            margin-left: 0.35rem;
+        }
+
+        /* Show drawer close button inside sidebar on mobile */
+        [data-testid="stSidebarCollapseButton"],
+        button[data-testid="stSidebarCollapseButton"],
+        [data-testid="stSidebarHeader"] button {
+            display: flex !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            background-color: #F3F4F6 !important;
+            color: #000000 !important;
+            border-radius: 9999px !important;
+        }
+
+        /* Mobile Sidebar as smooth off-canvas overlay drawer */
+        [data-testid="stSidebar"] {
+            width: 86vw !important;
+            max-width: 360px !important;
+            min-width: 280px !important;
+            box-shadow: 4px 0 25px rgba(0, 0, 0, 0.2) !important;
+            background-color: #FFFFFF !important;
+            z-index: 1000000 !important;
+        }
+
+        /* Metric Cards: Clean 2-column grid on phones */
         [data-testid="column"] {
-            min-width: 100% !important;
-            flex: 1 1 100% !important;
-            margin-bottom: 0.6rem !important;
+            min-width: 47% !important;
+            flex: 1 1 47% !important;
+            margin-bottom: 0.5rem !important;
         }
+
+        /* Mobile Action Buttons: Full width for easy thumb tapping */
+        .stButton > button,
+        .stDownloadButton > button {
+            width: 100% !important;
+            text-align: center !important;
+            justify-content: center !important;
+        }
+
+        .hero-title {
+            font-size: 1.85rem !important;
+            line-height: 1.2 !important;
+        }
+
+        .hero-subtitle {
+            font-size: 0.88rem !important;
+        }
+
         .block-container {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
+            padding-top: 4.2rem !important;
+            padding-left: 0.9rem !important;
+            padding-right: 0.9rem !important;
+        }
+
+        /* Hide bottom badges/watermark on mobile */
+        [data-testid="manage-app-button"],
+        .viewerBadge_container__1QSob {
+            display: none !important;
+            visibility: hidden !important;
         }
     }
 </style>
