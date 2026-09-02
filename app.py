@@ -82,6 +82,14 @@ st.markdown("""
 
     /* Desktop View (>= 769px): Permanently Open Static Sidebar */
     @media (min-width: 769px) {
+        .mobile-filter-cta {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
         [data-testid="collapsedControl"],
         button[data-testid="stSidebarCollapseButton"],
         [data-testid="stSidebarCollapseButton"],
@@ -533,9 +541,10 @@ st.markdown("""
         /* Mobile: When sidebar is collapsed, slide 100% off screen (Zero peeking) */
         section[data-testid="stSidebar"][aria-expanded="false"] {
             transform: translateX(-100vw) !important;
+            margin-left: -100vw !important;
             visibility: hidden !important;
             pointer-events: none !important;
-            display: none !important;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
 
         /* Mobile: When sidebar is expanded, smoothly overlay as a drawer */
@@ -550,12 +559,44 @@ st.markdown("""
             width: 85vw !important;
             max-width: 350px !important;
             min-width: 260px !important;
-            transform: none !important;
+            transform: translateX(0) !important;
             margin-left: 0 !important;
             z-index: 9999999 !important;
             box-shadow: 10px 0 40px rgba(0, 0, 0, 0.35) !important;
             background-color: #FFFFFF !important;
             overflow-y: auto !important;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+
+        /* Mobile-Only CTA Button to Open Filters */
+        .mobile-filter-cta {
+            display: block !important;
+            width: 100% !important;
+            margin-top: 0.6rem !important;
+            margin-bottom: 0.85rem !important;
+        }
+
+        .mobile-cta-btn {
+            width: 100% !important;
+            background-color: #FFFFFF !important;
+            color: #000000 !important;
+            border: 2px solid #000000 !important;
+            border-radius: 9999px !important;
+            font-weight: 800 !important;
+            font-size: 0.95rem !important;
+            padding: 0.75rem 1.2rem !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0.5rem !important;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .mobile-cta-btn:active {
+            background-color: #FFE600 !important;
+            transform: scale(0.98) !important;
         }
 
         /* Metric Cards: Clean 2-column grid on phones */
@@ -847,6 +888,33 @@ st.markdown(f"""
         <h1 class="hero-title">Business Directory <span class="highlight-yellow">Crawler</span></h1>
         <div class="hero-subtitle">High-speed global business directory extraction with phone numbers, websites, emails, and physical addresses.</div>
     </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Mobile-Only CTA Button to Open Sidebar Filters
+st.markdown("""
+<div class="mobile-filter-cta">
+    <button onclick="
+        var btn = window.parent.document.querySelector('[data-testid=\\'collapsedControl\\'] button') 
+               || document.querySelector('[data-testid=\\'collapsedControl\\'] button')
+               || window.parent.document.querySelector('header button')
+               || document.querySelector('header button');
+        if (btn) {
+            btn.click();
+        } else {
+            var sb = window.parent.document.querySelector('section[data-testid=\\'stSidebar\\']')
+                  || document.querySelector('section[data-testid=\\'stSidebar\\']');
+            if (sb) {
+                sb.setAttribute('aria-expanded', 'true');
+                sb.style.setProperty('transform', 'translateX(0)', 'important');
+                sb.style.setProperty('margin-left', '0', 'important');
+                sb.style.setProperty('visibility', 'visible', 'important');
+                sb.style.setProperty('pointer-events', 'auto', 'important');
+            }
+        }
+    " class="mobile-cta-btn">
+        🧭 Select Region & Categories ▾
+    </button>
 </div>
 """, unsafe_allow_html=True)
 
