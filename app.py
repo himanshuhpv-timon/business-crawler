@@ -1,9 +1,8 @@
 """
 app.py - High-Performance Global Business Directory Extractor
-Powered by Streamlit, DuckDB, Overture Maps S3, and GeoNamesCache.
 Features global cascading location selectors, multi-city extraction,
 select-all-cities mode, multi-category stacking, keyword clubbing,
-offline 0ms geocoding, and unlimited record extraction.
+offline 0ms geocoding, real-time keystroke filtering, and unlimited record extraction.
 Styled with a high-contrast Neo-Minimalist Black & Electric Yellow aesthetic on Pure White.
 """
 
@@ -13,6 +12,12 @@ import time
 from typing import List, Optional, Tuple
 import pandas as pd
 import streamlit as st
+
+# Real-time keystroke search
+try:
+    from st_keyup import st_keyup
+except ImportError:
+    st_keyup = None
 
 # Import local engines
 from geocoder import geocode_location_details
@@ -239,21 +244,24 @@ st.markdown("""
         font-weight: 800 !important;
     }
 
+    /* Bottom Download Button with Ample Sizing and High Contrast */
     .stDownloadButton > button {
         border-radius: 9999px !important;
         font-weight: 800 !important;
-        font-size: 0.92rem !important;
-        padding: 0.68rem 1.9rem !important;
+        font-size: 0.95rem !important;
+        padding: 0.72rem 2.2rem !important;
         border: 2px solid #000000 !important;
         background-color: #000000 !important;
         color: #FFE600 !important;
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        white-space: nowrap !important;
     }
 
     .stDownloadButton > button * {
         color: #FFE600 !important;
         font-weight: 800 !important;
+        white-space: nowrap !important;
     }
 
     .stDownloadButton > button:hover {
@@ -394,7 +402,8 @@ st.markdown("""
     }
 
     [data-testid="stSidebar"] [data-baseweb="select"]:focus-within,
-    [data-testid="stSidebar"] .stTextInput input:focus {
+    [data-testid="stSidebar"] .stTextInput input:focus,
+    .stTextInput input:focus {
         border-color: #000000 !important;
         box-shadow: 0 0 0 3px rgba(255, 230, 0, 0.3) !important;
     }
@@ -474,7 +483,7 @@ def cached_query_overture(
     keyword: str,
     all_categories: bool
 ) -> pd.DataFrame:
-    """Caches DuckDB S3 queries for places in a bbox and category."""
+    """Caches places streaming queries for a bbox and category."""
     cat_list = list(categories_tuple) if categories_tuple else None
     kw = keyword.strip() if keyword else None
     return fetch_overture_places(
@@ -486,10 +495,9 @@ def cached_query_overture(
     )
 
 
-# ---------------- SIDEBAR: GLOBAL CASCADING & MULTI-CITY SELECTORS ----------------
+# ---------------- SIDEBAR: LOCATION & INDUSTRY CONFIGURATION ----------------
 with st.sidebar:
-    st.markdown("### ⚡ Search Parameters")
-    st.caption("Direct S3 Parquet streaming powered by DuckDB & Overture Maps.")
+    st.markdown("### 🧭 Search Filters")
 
     # 1. Geographic Location
     st.markdown("#### 1. Geographic Location")
@@ -535,7 +543,6 @@ with st.sidebar:
         selected_cities = cities_list
         st.info(f"ℹ️ All **{len(cities_list)}** cities in **{selected_state}** selected.")
     else:
-        # Default to a prominent city
         default_city_selection = []
         if "Austin" in cities_list:
             default_city_selection = ["Austin"]
@@ -574,7 +581,7 @@ with st.sidebar:
     )
 
     if select_all_cats:
-        st.info("ℹ️ All 2,117 business categories enabled.")
+        st.info("ℹ️ All business categories enabled.")
         selected_categories: List[str] = []
         keyword_input = ""
     else:
@@ -592,9 +599,6 @@ with st.sidebar:
             default=default_cats,
             help="Stack multiple standardized categories at once (e.g. plumber + electrician)."
         )
-
-    st.markdown("---")
-    st.caption("⚡ **Zero API Keys**: DuckDB direct S3 Parquet streaming. Unlimited records.")
 
 
 # ---------------- MAIN DASHBOARD HERO ----------------
@@ -629,17 +633,17 @@ else:
     category_summary = "All Categories"
     cat_slug_for_file = "all"
 
-# Hero Header with Neo-Minimalist Black & Electric Yellow Layout
+# Hero Header: Independent & Proprietary Look
 st.markdown(f"""
 <div class="hero-header">
     <div class="hero-title-group">
         <div class="hero-badge-row">
-            <span class="hero-tag"><span class="dot-yellow"></span> S3 Parquet Engine</span>
+            <span class="hero-tag"><span class="dot-yellow"></span> Live Directory</span>
             <span class="hero-tag-outline">250+ Countries</span>
-            <span class="hero-tag-outline">2,117 Categories</span>
+            <span class="hero-tag-outline">Global Coverage</span>
         </div>
         <h1 class="hero-title">Business Directory <span class="highlight-yellow">Crawler</span></h1>
-        <div class="hero-subtitle">Instant geospatial business directory extraction directly from Overture Maps via DuckDB.</div>
+        <div class="hero-subtitle">High-speed global business directory extraction with phone numbers, websites, emails, and physical addresses.</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -693,7 +697,7 @@ if run_clicked:
             center_lat = loc_details["latitude"]
             center_lon = loc_details["longitude"]
         else:
-            status_box.write(f"📍 **Phase 1: Computing enclosing bounding box for {len(selected_cities)} cities...**")
+            status_box.write(f"📍 **Phase 1: Computing enclosing boundary for {len(selected_cities)} cities...**")
             for c in selected_cities:
                 c_query = loc_service.format_location_query(city=c, state=selected_state, country=selected_country)
                 c_details = cached_geocode_location(c_query, buffer_ratio=buffer_ratio)
@@ -713,8 +717,8 @@ if run_clicked:
             f"📐 **Bounding Box**: `[{bbox[0]:.4f}, {bbox[1]:.4f}, {bbox[2]:.4f}, {bbox[3]:.4f}]`"
         )
 
-        # Phase 2: DuckDB S3 Parquet Streaming
-        status_box.write(f"🦆 **Phase 2: Streaming places from AWS S3 via DuckDB ({category_summary})...**")
+        # Phase 2: Places Streaming
+        status_box.write(f"⚡ **Phase 2: Extracting verified business records ({category_summary})...**")
         t0 = time.time()
         
         categories_tuple = tuple(selected_categories) if selected_categories else ()
@@ -854,7 +858,7 @@ if st.session_state.global_places_df is not None and not st.session_state.global
         <div class="metric-card-modern">
             <div class="metric-header-row">
                 <span class="metric-icon-circle">⚡</span>
-                <span class="metric-subbadge">Cloud</span>
+                <span class="metric-subbadge">Fast</span>
             </div>
             <div class="metric-number">{meta.get("duration", 0)}s</div>
             <div class="metric-title">Pipeline Time</div>
@@ -881,13 +885,16 @@ if st.session_state.global_places_df is not None and not st.session_state.global
     tab_data, tab_map = st.tabs(["📋 Directory Dataset", "🗺️ Geographic Map"])
 
     with tab_data:
-        # ---------------- TOP ACTION & DOWNLOAD BAR ----------------
-        top_bar_col_dl, top_bar_col_search = st.columns([1.8, 3.2])
-        
-        # Prepare filtered dataframe
-        view_df = df.copy()
-
-        with top_bar_col_search:
+        # Real-Time Keystroke Search Box (filters on every letter typed)
+        if st_keyup is not None:
+            search_name = st_keyup(
+                label="Search business name",
+                placeholder="🔍 Search businesses in real-time (type to filter instantly without pressing Enter)...",
+                debounce=150,
+                key="realtime_keystroke_search",
+                label_visibility="collapsed"
+            )
+        else:
             search_name = st.text_input(
                 "Filter dataset by name",
                 placeholder="🔍 Search businesses in real-time...",
@@ -906,6 +913,7 @@ if st.session_state.global_places_df is not None and not st.session_state.global
             filt_addr = st.checkbox("Only with Address", value=False)
 
         # Apply Real-Time Table Filters
+        view_df = df.copy()
         if filt_phone:
             view_df = view_df[view_df["phone"].str.strip().str.len() > 3]
         if filt_website:
@@ -914,22 +922,10 @@ if st.session_state.global_places_df is not None and not st.session_state.global
             view_df = view_df[view_df["email"].str.strip().str.len() > 3]
         if filt_addr:
             view_df = view_df[view_df["street_address"].str.strip().str.len() > 0]
-        if search_name.strip():
+        if search_name and search_name.strip():
             view_df = view_df[view_df["name"].str.contains(search_name.strip(), case=False, na=False)]
 
         csv_bytes = view_df[available_cols].to_csv(index=False).encode("utf-8")
-
-        # Top Prominent Download Button (Immediately Visible)
-        with top_bar_col_dl:
-            st.download_button(
-                label=f"📥 Download CSV ({len(view_df):,} Places)",
-                data=csv_bytes,
-                file_name=export_filename,
-                mime="text/csv",
-                type="primary",
-                key="top_download_csv_btn",
-                use_container_width=True
-            )
 
         st.caption(f"Displaying **{len(view_df):,}** of **{total_count:,}** extracted businesses")
 
@@ -952,11 +948,13 @@ if st.session_state.global_places_df is not None and not st.session_state.global
             }
         )
 
-        # Bottom Download Button (For after reviewing the table)
-        b_col_dl, b_col_spacer = st.columns([2.2, 3.8])
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Bottom Download Button with Ample Width (Never truncated)
+        b_col_dl, b_col_spacer = st.columns([1.2, 1.0])
         with b_col_dl:
             st.download_button(
-                label=f"📥 Download Filtered CSV ({len(view_df):,} Records)",
+                label=f"📥 Download Dataset ({len(view_df):,} Records)",
                 data=csv_bytes,
                 file_name=export_filename,
                 mime="text/csv",
