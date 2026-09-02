@@ -63,11 +63,22 @@ st.markdown("""
         letter-spacing: -0.03em !important;
     }
 
-    /* 2. Hide Menus & Footers */
-    #MainMenu { visibility: hidden !important; display: none !important; }
-    header { visibility: hidden !important; display: none !important; }
-    footer { visibility: hidden !important; display: none !important; }
-    [data-testid="manage-app-button"], .viewerBadge_container__1QSob { display: none !important; }
+    /* 2. Transparent Header to preserve mobile sidebar toggle */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        color: transparent !important;
+        height: 2.8rem !important;
+        z-index: 99999 !important;
+    }
+    header [data-testid="stToolbar"],
+    [data-testid="stDecoration"],
+    #MainMenu,
+    footer,
+    [data-testid="manage-app-button"],
+    .viewerBadge_container__1QSob {
+        display: none !important;
+        visibility: hidden !important;
+    }
 
     /* Desktop View (>= 769px): Permanently Open Static Sidebar */
     @media (min-width: 769px) {
@@ -519,22 +530,19 @@ st.markdown("""
             border-radius: 9999px !important;
         }
 
-        /* Mobile: When sidebar is collapsed, FORCE 100% OFF SCREEN (Zero peeking) */
+        /* Mobile: When sidebar is collapsed, slide 100% off screen (Zero peeking) */
         section[data-testid="stSidebar"][aria-expanded="false"] {
-            display: none !important;
-            visibility: hidden !important;
             transform: translateX(-100vw) !important;
-            margin-left: -9999px !important;
-            width: 0 !important;
-            min-width: 0 !important;
-            max-width: 0 !important;
-            overflow: hidden !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            display: none !important;
         }
 
         /* Mobile: When sidebar is expanded, smoothly overlay as a drawer */
         section[data-testid="stSidebar"][aria-expanded="true"] {
             display: block !important;
             visibility: visible !important;
+            pointer-events: auto !important;
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
@@ -551,13 +559,7 @@ st.markdown("""
         }
 
         /* Metric Cards: Clean 2-column grid on phones */
-        [data-testid="stHorizontalBlock"] {
-            display: flex !important;
-            flex-wrap: wrap !important;
-            gap: 0.5rem !important;
-        }
-
-        [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+        [data-testid="column"]:has(.metric-card-modern) {
             min-width: calc(50% - 0.4rem) !important;
             max-width: calc(50% - 0.4rem) !important;
             flex: 1 1 calc(50% - 0.4rem) !important;
@@ -848,19 +850,16 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Target Parameter Bar & Run Action
-target_col_chips, target_col_btn = st.columns([3.6, 1.4])
-with target_col_chips:
-    st.markdown(f"""
-    <div class="chip-container" style="padding-top: 0.35rem;">
-        <span class="param-chip">📍 <strong>{location_summary}</strong></span>
-        <span class="param-chip">🏷️ <strong>{category_summary}</strong></span>
-        <span class="param-chip">🎯 <strong>{'Metro (+20%)' if buffer_ratio > 0 else 'Strict Limits'}</strong></span>
-    </div>
-    """, unsafe_allow_html=True)
+# Target Parameter Chips & Run Action (Aligned perfectly on Laptop & Mobile)
+st.markdown(f"""
+<div class="chip-container" style="margin-top: 0.4rem; margin-bottom: 0.85rem;">
+    <span class="param-chip">📍 <strong>{location_summary}</strong></span>
+    <span class="param-chip">🏷️ <strong>{category_summary}</strong></span>
+    <span class="param-chip">🎯 <strong>{'Metro (+20%)' if buffer_ratio > 0 else 'Strict Limits'}</strong></span>
+</div>
+""", unsafe_allow_html=True)
 
-with target_col_btn:
-    run_clicked = st.button("⚡ Extract Businesses →", type="primary", use_container_width=True)
+run_clicked = st.button("⚡ Extract Businesses →", type="primary", use_container_width=True)
 
 # Session State Persistence
 if "global_places_df" not in st.session_state:
