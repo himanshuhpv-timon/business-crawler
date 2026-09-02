@@ -82,7 +82,8 @@ st.markdown("""
 
     /* Desktop View (>= 769px): Permanently Open Static Sidebar */
     @media (min-width: 769px) {
-        .mobile-filter-cta {
+        .mobile-filter-cta,
+        .mobile-close-sidebar {
             display: none !important;
             visibility: hidden !important;
             height: 0 !important;
@@ -539,16 +540,17 @@ st.markdown("""
         }
 
         /* Mobile: When sidebar is collapsed, slide 100% off screen (Zero peeking) */
-        section[data-testid="stSidebar"][aria-expanded="false"] {
+        section[data-testid="stSidebar"][aria-expanded="false"]:not(.mobile-sidebar-force-open) {
             transform: translateX(-100vw) !important;
             margin-left: -100vw !important;
             visibility: hidden !important;
             pointer-events: none !important;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
 
         /* Mobile: When sidebar is expanded, smoothly overlay as a drawer */
-        section[data-testid="stSidebar"][aria-expanded="true"] {
+        section[data-testid="stSidebar"][aria-expanded="true"],
+        section[data-testid="stSidebar"].mobile-sidebar-force-open {
             display: block !important;
             visibility: visible !important;
             pointer-events: auto !important;
@@ -556,16 +558,36 @@ st.markdown("""
             top: 0 !important;
             left: 0 !important;
             height: 100vh !important;
-            width: 85vw !important;
-            max-width: 350px !important;
-            min-width: 260px !important;
+            width: 86vw !important;
+            max-width: 360px !important;
+            min-width: 280px !important;
             transform: translateX(0) !important;
             margin-left: 0 !important;
             z-index: 9999999 !important;
-            box-shadow: 10px 0 40px rgba(0, 0, 0, 0.35) !important;
+            box-shadow: 14px 0 50px rgba(0, 0, 0, 0.45) !important;
             background-color: #FFFFFF !important;
             overflow-y: auto !important;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+
+        /* Mobile Close Button inside Sidebar Drawer */
+        .mobile-close-sidebar {
+            display: block !important;
+            margin-bottom: 0.85rem !important;
+        }
+
+        .mobile-close-btn {
+            width: 100% !important;
+            background-color: #000000 !important;
+            color: #FFE600 !important;
+            border: 2px solid #000000 !important;
+            border-radius: 9999px !important;
+            font-weight: 800 !important;
+            font-size: 0.9rem !important;
+            padding: 0.55rem 1rem !important;
+            cursor: pointer !important;
+            text-align: center !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
         }
 
         /* Mobile-Only CTA Button to Open Filters */
@@ -690,6 +712,36 @@ def cached_query_overture(
 
 # ---------------- SIDEBAR: LOCATION & INDUSTRY CONFIGURATION ----------------
 with st.sidebar:
+    # Mobile-Only Close Drawer Button
+    st.markdown("""
+    <div class="mobile-close-sidebar">
+        <button type="button" id="mobileSidebarCloseBtn" class="mobile-close-btn">
+            ✕ Close Filters
+        </button>
+    </div>
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="
+        var cbtn = document.getElementById('mobileSidebarCloseBtn');
+        if (cbtn && !cbtn.dataset.bound) {
+            cbtn.dataset.bound = 'true';
+            function closeSidebar() {
+                var sb = document.querySelector('section[data-testid=\x22stSidebar\x22]');
+                if (sb) {
+                    sb.setAttribute('aria-expanded', 'false');
+                    sb.classList.remove('mobile-sidebar-force-open');
+                }
+                var defaultClose = document.querySelector('[data-testid=\x22stSidebarCollapseButton\x22]')
+                                || document.querySelector('button[aria-label=\x22Close sidebar\x22]');
+                if (defaultClose) defaultClose.click();
+            }
+            cbtn.addEventListener('click', closeSidebar);
+            cbtn.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                closeSidebar();
+            });
+        }
+    " style="display:none;" />
+    """, unsafe_allow_html=True)
+
     st.markdown("### 🧭 Search Filters")
 
     # 1. Geographic Location
@@ -894,28 +946,53 @@ st.markdown(f"""
 # Mobile-Only CTA Button to Open Sidebar Filters
 st.markdown("""
 <div class="mobile-filter-cta">
-    <button onclick="
-        var btn = window.parent.document.querySelector('[data-testid=\\'collapsedControl\\'] button') 
-               || document.querySelector('[data-testid=\\'collapsedControl\\'] button')
-               || window.parent.document.querySelector('header button')
-               || document.querySelector('header button');
-        if (btn) {
-            btn.click();
-        } else {
-            var sb = window.parent.document.querySelector('section[data-testid=\\'stSidebar\\']')
-                  || document.querySelector('section[data-testid=\\'stSidebar\\']');
-            if (sb) {
-                sb.setAttribute('aria-expanded', 'true');
-                sb.style.setProperty('transform', 'translateX(0)', 'important');
-                sb.style.setProperty('margin-left', '0', 'important');
-                sb.style.setProperty('visibility', 'visible', 'important');
-                sb.style.setProperty('pointer-events', 'auto', 'important');
-            }
-        }
-    " class="mobile-cta-btn">
+    <button type="button" id="mobileFilterCtaBtn" class="mobile-cta-btn">
         🧭 Select Region & Categories ▾
     </button>
 </div>
+<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="
+    (function() {
+        function triggerSidebar() {
+            var sb = document.querySelector('section[data-testid=\x22stSidebar\x22]');
+            if (sb) {
+                sb.setAttribute('aria-expanded', 'true');
+                sb.classList.add('mobile-sidebar-force-open');
+            }
+            var selectors = [
+                '[data-testid=\x22collapsedControl\x22] button',
+                'button[aria-label=\x22Open sidebar\x22]',
+                'button[kind=\x22header\x22]',
+                'header button'
+            ];
+            for (var i = 0; i < selectors.length; i++) {
+                var el = document.querySelector(selectors[i]);
+                if (el) { el.click(); break; }
+            }
+            try {
+                if (window.parent && window.parent !== window) {
+                    var psb = window.parent.document.querySelector('section[data-testid=\x22stSidebar\x22]');
+                    if (psb) {
+                        psb.setAttribute('aria-expanded', 'true');
+                        psb.classList.add('mobile-sidebar-force-open');
+                    }
+                    for (var j = 0; j < selectors.length; j++) {
+                        var pel = window.parent.document.querySelector(selectors[j]);
+                        if (pel) { pel.click(); break; }
+                    }
+                }
+            } catch(e) {}
+        }
+        var btn = document.getElementById('mobileFilterCtaBtn');
+        if (btn && !btn.dataset.bound) {
+            btn.dataset.bound = 'true';
+            btn.addEventListener('click', triggerSidebar);
+            btn.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                triggerSidebar();
+            });
+        }
+    })();
+" style="display:none;" />
 """, unsafe_allow_html=True)
 
 # Target Parameter Chips & Run Action (Aligned perfectly on Laptop & Mobile)
