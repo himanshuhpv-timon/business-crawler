@@ -605,50 +605,61 @@ with st.sidebar:
     )
     buffer_ratio = 0.20 if "Metro" in scope_option else 0.0
 
-    # 4. Category & Keyword Selector
+    # 4. Business Industry (3 Dedicated Sections)
     st.markdown("#### 4. Business Industry")
+
+    # Section 1: All Categories
+    st.markdown("##### 1. All Categories")
     select_all_cats = st.checkbox(
-        "⚡ Extract All Categories (Full City)",
+        "⚡ Extract All Categories (Full City Directory)",
         value=False,
         help="Extract all commercial businesses across all industries inside the bounding box."
     )
 
     if select_all_cats:
-        st.info("ℹ️ All business categories enabled.")
+        st.info("ℹ️ Complete directory extraction enabled across all 2,117 business categories.")
         selected_categories: List[str] = []
         keyword_input = ""
     else:
-        # Ongoing Keystroke Keyword Search (filters on every letter typed)
+        # Section 2: Primary Category Selector (Multiple)
+        st.markdown("##### 2. Primary Category Selector (Multiple)")
+        if "primary_categories_selection" not in st.session_state:
+            st.session_state.primary_categories_selection = ["restaurant"] if "restaurant" in all_categories else []
+
+        selected_primary = st.multiselect(
+            "Select specific primary categories:",
+            options=all_categories,
+            default=st.session_state.primary_categories_selection,
+            help="Choose one or more specific standard categories (e.g. dentist, auto_repair_shop)."
+        )
+
+        # Section 3: Keyword Search (Clubbed Categories)
+        st.markdown("##### 3. Keyword Search (Clubbed Categories)")
         keyword_input = ""
         if st_keyup is not None:
             try:
                 keyword_input = st_keyup(
-                    label="🔍 Keyword Search (Clubbing)",
+                    label="Search generic keyword to club related categories:",
                     value="",
-                    placeholder="e.g., restaurant, contractor, clinic",
+                    placeholder="e.g., restaurant, contractor, clinic, dental",
                     debounce=150,
                     key="keyword_search_clubbing"
                 )
             except Exception:
                 keyword_input = st.text_input(
-                    "🔍 Keyword Search (Clubbing)",
+                    "Search generic keyword to club related categories:",
                     value="",
-                    placeholder="e.g., restaurant, contractor, clinic"
+                    placeholder="e.g., restaurant, contractor, clinic, dental"
                 )
         else:
             keyword_input = st.text_input(
-                "🔍 Keyword Search (Clubbing)",
+                "Search generic keyword to club related categories:",
                 value="",
-                placeholder="e.g., restaurant, contractor, clinic"
+                placeholder="e.g., restaurant, contractor, clinic, dental"
             )
 
-        # Initialize session state for selected categories if not present
-        if "categories_multiselect" not in st.session_state:
-            st.session_state.categories_multiselect = ["restaurant"] if "restaurant" in all_categories else []
-
-        # Find matching primary categories dynamically in real time
-        matching_primary: List[str] = []
-        sorted_matches: List[str] = []
+        # Ongoing Evaluation: If a generic term is searched, take ALL matching primary categories
+        clubbed_categories: List[str] = []
         if keyword_input and keyword_input.strip():
             kw_clean = keyword_input.strip().lower()
             matching_primary = [c for c in all_categories if kw_clean in c.lower()]
@@ -658,39 +669,19 @@ with st.sidebar:
             sorted_matches = exact + starts + contains
 
             if sorted_matches:
-                st.caption(f"💡 **Suggested Primary Categories ({len(matching_primary)} matching):**")
-                # Top matching suggestions as quick-add toggle buttons
-                sugg_pills = sorted_matches[:4]
-                sugg_cols = st.columns(len(sugg_pills))
-                for i, cat in enumerate(sugg_pills):
-                    with sugg_cols[i]:
-                        is_sel = cat in st.session_state.categories_multiselect
-                        label = f"✓ {cat}" if is_sel else f"+ {cat}"
-                        def toggle_cat(target_cat=cat):
-                            if target_cat in st.session_state.categories_multiselect:
-                                st.session_state.categories_multiselect.remove(target_cat)
-                            else:
-                                st.session_state.categories_multiselect.append(target_cat)
-                        st.button(
-                            label,
-                            key=f"pill_sugg_{cat}_{i}",
-                            on_click=toggle_cat,
-                            use_container_width=True,
-                            help=f"Click to {'remove from' if is_sel else 'add to'} selection"
-                        )
+                st.caption(f"💡 Found **{len(sorted_matches)}** matching primary categories (all automatically taken):")
+                clubbed_categories = st.multiselect(
+                    f"Clubbed categories for '{keyword_input.strip()}':",
+                    options=sorted_matches,
+                    default=sorted_matches,
+                    help="All primary categories matching your generic term are automatically included. You can inspect or refine them here."
+                )
+            else:
+                st.info(f"ℹ️ Generic search: All records matching '{keyword_input.strip()}' will be clubbed during extraction.")
 
-        # Reorder options so matching primary categories appear at the very top
-        if sorted_matches:
-            ordered_categories = sorted_matches + [c for c in all_categories if c not in sorted_matches]
-        else:
-            ordered_categories = all_categories
-
-        selected_categories = st.multiselect(
-            "📂 Multi-Select Categories",
-            options=ordered_categories,
-            key="categories_multiselect",
-            help="Stack multiple standardized categories at once (e.g. plumber + electrician)."
-        )
+        # Unified Categories: Combine specific primary selections with all taken clubbed categories
+        combined = list(dict.fromkeys(selected_primary + clubbed_categories))
+        selected_categories = combined
 
 
 # ---------------- MAIN DASHBOARD HERO ----------------
