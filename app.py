@@ -244,6 +244,39 @@ st.markdown("""
         font-weight: 800 !important;
     }
 
+    /* Sidebar Category Suggestion Pills */
+    [data-testid="stSidebar"] div[data-testid="column"] .stButton > button {
+        border-radius: 9999px !important;
+        font-size: 0.74rem !important;
+        font-weight: 700 !important;
+        padding: 0.22rem 0.55rem !important;
+        min-height: 28px !important;
+        height: auto !important;
+        border: 1.5px solid #000000 !important;
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+        box-shadow: none !important;
+        white-space: nowrap !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    [data-testid="stSidebar"] div[data-testid="column"] .stButton > button * {
+        font-size: 0.74rem !important;
+        color: #000000 !important;
+        font-weight: 700 !important;
+    }
+
+    [data-testid="stSidebar"] div[data-testid="column"] .stButton > button:hover {
+        background-color: #FFE600 !important;
+        color: #000000 !important;
+        border-color: #000000 !important;
+        transform: translateY(-1px) !important;
+    }
+
+    [data-testid="stSidebar"] div[data-testid="column"] .stButton > button:hover * {
+        color: #000000 !important;
+    }
+
     /* Bottom Download Button with Ample Sizing and High Contrast */
     .stDownloadButton > button {
         border-radius: 9999px !important;
@@ -585,18 +618,77 @@ with st.sidebar:
         selected_categories: List[str] = []
         keyword_input = ""
     else:
-        keyword_input = st.text_input(
-            "🔍 Keyword Search (Clubbing)",
-            value="",
-            placeholder="e.g., restaurant, contractor, clinic",
-            help="Wildcard search matching primary & alternate categories (e.g. 'restaurant' clubs thai_restaurant, italian_restaurant, etc.)."
-        )
+        # Ongoing Keystroke Keyword Search (filters on every letter typed)
+        keyword_input = ""
+        if st_keyup is not None:
+            try:
+                keyword_input = st_keyup(
+                    label="🔍 Keyword Search (Clubbing)",
+                    value="",
+                    placeholder="e.g., restaurant, contractor, clinic",
+                    debounce=150,
+                    key="keyword_search_clubbing"
+                )
+            except Exception:
+                keyword_input = st.text_input(
+                    "🔍 Keyword Search (Clubbing)",
+                    value="",
+                    placeholder="e.g., restaurant, contractor, clinic"
+                )
+        else:
+            keyword_input = st.text_input(
+                "🔍 Keyword Search (Clubbing)",
+                value="",
+                placeholder="e.g., restaurant, contractor, clinic"
+            )
 
-        default_cats = ["restaurant"] if not keyword_input and "restaurant" in all_categories else []
+        # Initialize session state for selected categories if not present
+        if "categories_multiselect" not in st.session_state:
+            st.session_state.categories_multiselect = ["restaurant"] if "restaurant" in all_categories else []
+
+        # Find matching primary categories dynamically in real time
+        matching_primary: List[str] = []
+        sorted_matches: List[str] = []
+        if keyword_input and keyword_input.strip():
+            kw_clean = keyword_input.strip().lower()
+            matching_primary = [c for c in all_categories if kw_clean in c.lower()]
+            exact = [c for c in matching_primary if c.lower() == kw_clean]
+            starts = [c for c in matching_primary if c.lower().startswith(kw_clean) and c not in exact]
+            contains = [c for c in matching_primary if c not in exact and c not in starts]
+            sorted_matches = exact + starts + contains
+
+            if sorted_matches:
+                st.caption(f"💡 **Suggested Primary Categories ({len(matching_primary)} matching):**")
+                # Top matching suggestions as quick-add toggle buttons
+                sugg_pills = sorted_matches[:4]
+                sugg_cols = st.columns(len(sugg_pills))
+                for i, cat in enumerate(sugg_pills):
+                    with sugg_cols[i]:
+                        is_sel = cat in st.session_state.categories_multiselect
+                        label = f"✓ {cat}" if is_sel else f"+ {cat}"
+                        def toggle_cat(target_cat=cat):
+                            if target_cat in st.session_state.categories_multiselect:
+                                st.session_state.categories_multiselect.remove(target_cat)
+                            else:
+                                st.session_state.categories_multiselect.append(target_cat)
+                        st.button(
+                            label,
+                            key=f"pill_sugg_{cat}_{i}",
+                            on_click=toggle_cat,
+                            use_container_width=True,
+                            help=f"Click to {'remove from' if is_sel else 'add to'} selection"
+                        )
+
+        # Reorder options so matching primary categories appear at the very top
+        if sorted_matches:
+            ordered_categories = sorted_matches + [c for c in all_categories if c not in sorted_matches]
+        else:
+            ordered_categories = all_categories
+
         selected_categories = st.multiselect(
             "📂 Multi-Select Categories",
-            options=all_categories,
-            default=default_cats,
+            options=ordered_categories,
+            key="categories_multiselect",
             help="Stack multiple standardized categories at once (e.g. plumber + electrician)."
         )
 
@@ -886,14 +978,22 @@ if st.session_state.global_places_df is not None and not st.session_state.global
 
     with tab_data:
         # Real-Time Keystroke Search Box (filters on every letter typed)
+        search_name = ""
         if st_keyup is not None:
-            search_name = st_keyup(
-                label="Search business name",
-                placeholder="🔍 Search businesses in real-time (type to filter instantly without pressing Enter)...",
-                debounce=150,
-                key="realtime_keystroke_search",
-                label_visibility="collapsed"
-            )
+            try:
+                search_name = st_keyup(
+                    label="Search business name",
+                    placeholder="🔍 Search businesses in real-time (type to filter instantly without pressing Enter)...",
+                    debounce=150,
+                    key="realtime_keystroke_search",
+                    label_visibility="collapsed"
+                )
+            except Exception:
+                search_name = st.text_input(
+                    "Filter dataset by name",
+                    placeholder="🔍 Search businesses in real-time...",
+                    label_visibility="collapsed"
+                )
         else:
             search_name = st.text_input(
                 "Filter dataset by name",
