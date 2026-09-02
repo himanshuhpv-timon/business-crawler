@@ -151,6 +151,47 @@ class LocationService:
 
         return sorted(list(matched_cities))
 
+    def get_city_details(
+        self,
+        city_name: str,
+        country_name: Optional[str] = None,
+        state_name: Optional[str] = None
+    ) -> Optional[Dict[str, any]]:
+        """
+        Retrieves offline city coordinates, population, and metadata in 0ms.
+        Bypasses external geocoding APIs entirely.
+        """
+        iso = self.get_country_iso(country_name) if country_name else None
+        c_name_clean = city_name.strip().lower()
+
+        # Exact match first
+        matches = []
+        for city in self.cities.values():
+            if iso and city.get("countrycode") != iso:
+                continue
+            if city.get("name", "").lower() == c_name_clean:
+                matches.append(city)
+
+        # Fallback to substring matching if no exact match
+        if not matches:
+            for city in self.cities.values():
+                if iso and city.get("countrycode") != iso:
+                    continue
+                if c_name_clean in city.get("name", "").lower():
+                    matches.append(city)
+
+        if matches:
+            best = max(matches, key=lambda x: x.get("population", 0))
+            return {
+                "name": best.get("name"),
+                "latitude": float(best.get("latitude")),
+                "longitude": float(best.get("longitude")),
+                "population": int(best.get("population", 50000)),
+                "countrycode": best.get("countrycode"),
+                "admin1code": best.get("admin1code")
+            }
+        return None
+
     def get_all_categories(self) -> List[str]:
         """Returns the complete list of 2,100+ Overture categories."""
         return self.categories
